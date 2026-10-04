@@ -36,6 +36,7 @@ public sealed class RunnerRegistry
 {
 	private const string ClaimsFolder = "claims";
 	private const string ClaimExtension = ".claim";
+	private const string LockExtension = ".lock";
 
 	private static readonly JsonSerializerOptions _claims = new(JsonSerializerDefaults.General)
 	{
@@ -138,10 +139,10 @@ public sealed class RunnerRegistry
 	/// running, and both write a row - and the first anybody hears of the collision is two strategies
 	/// trading against each other's positions on one account.
 	///
-	/// Moving a file onto a name that already exists is one operation the filesystem refuses rather than
-	/// splits, so exactly one of two racing callers gets it. A claim left behind by a runner that has
-	/// since died, or by a session that died before it started one, is taken over rather than honoured -
-	/// the whole reason for the rule is a live position, and neither of those is adding to one.
+	/// A claim is a file, put on the project's name while holding the lock every taker and every remover
+	/// of a claim holds, so exactly one of two racing callers gets it. A claim left behind by a runner
+	/// that has since died, or by a session that died before it started one, is taken over rather than
+	/// honoured - the whole reason for the rule is a live position, and neither of those is adding to one.
 	/// </remarks>
 	public RunnerHome Claim(string projectId, string deploymentId)
 	{
@@ -159,7 +160,7 @@ public sealed class RunnerRegistry
 			_probe.BootedAt);
 
 		// Twice: the first attempt may lose to a claim that turns out to be stale, and the second is
-		// against the same filesystem operation - so a third caller arriving in between still loses.
+		// decided under the same lock - so a third caller arriving in between still loses.
 		for (var attempt = 0; attempt < 2; attempt++)
 		{
 			if (Took(path, mine))
@@ -248,8 +249,9 @@ public sealed class RunnerRegistry
 	/// <param name="projectId">Project to release.</param>
 	/// <param name="deploymentId">Deployment releasing it.</param>
 	/// <remarks>
-	/// Checked rather than deleted outright. A claim belongs to whoever wrote it, and a session that
-	/// deleted somebody else's would let a second runner start on a project a first one is still trading.
+	/// Checked rather than deleted outright, and checked under the lock. A claim belongs to whoever wrote
+	/// it, and a session that deleted somebody else's - one that took the project between this reading
+	/// the name and clearing it - would let a second runner start on a project a first one is trading.
 	/// </remarks>
 	public void Release(string projectId, string deploymentId)
 	{
@@ -258,7 +260,9 @@ public sealed class RunnerRegistry
 
 		var path = ClaimFile(projectId);
 
-		if (Holder(path) is { } holder && string.Equals(holder.DeploymentId, deploymentId, StringComparison.Ordinal))
+		using var held = Hold(path);
+
+		if (held is not null && Holder(path) is { } holder && string.Equals(holder.DeploymentId, deploymentId, StringComparison.Ordinal))
 			Discard(path);
 	}
 
@@ -282,11 +286,13 @@ public sealed class RunnerRegistry
 	/// <returns>Whether this caller got it.</returns>
 	/// <remarks>
 	/// Written whole somewhere else and then moved into place, rather than created in place and filled
-	/// in. Moving onto a name that already exists is one operation the filesystem refuses rather than
-	/// splits, so exactly one of two racing callers gets it - and, unlike creating the file first, there
-	/// is no moment in which the claim exists and cannot be read. That moment is worth removing: a
-	/// competitor who found the file unreadable would have to decide whether it was half-written or
-	/// nonsense, and deciding wrong deletes a live claim.
+	/// in, so there is no moment in which the claim exists and cannot be read. That moment is worth
+	/// removing: a competitor who found the file unreadable would have to decide whether it was
+	/// half-written or nonsense, and deciding wrong deletes a live claim.
+	///
+	/// Whether the name is free is asked and acted on under the lock. Moving a file onto a taken name is
+	/// refused by the filesystem on Windows only: elsewhere the name is looked at and then replaced, so
+	/// two callers that both found it free would both come away believing the project is theirs.
 	///
 	/// Each caller stages under a name of its own, so the losers of a race clean up after themselves
 	/// without touching anything the winner wrote.
@@ -298,6 +304,15 @@ public sealed class RunnerRegistry
 		try
 		{
 			File.WriteAllBytes(staging, JsonSerializer.SerializeToUtf8Bytes(claim, _claims));
+
+			using var held = Hold(path);
+
+			if (held is null || File.Exists(path))
+			{
+				Discard(staging);
+
+				return false;
+			}
 
 			File.Move(staging, path);
 
@@ -338,38 +353,42 @@ public sealed class RunnerRegistry
 	/// <remarks>
 	/// Between judging a claim stale and deleting it, a faster caller may have removed it and moved its own
 	/// fresh claim onto the name; deleting by path would then remove the live one. So the claim is read
-	/// again and removed under a lock that every remover takes. The lock is an open file, which the system
-	/// releases when its holder dies, so it cannot itself be left behind.
+	/// again and removed under the lock.
 	/// </remarks>
 	private static void DiscardIfStill(string path, RunnerClaim stale)
 	{
-		var guard = $"{path}.takeover";
+		using var held = Hold(path);
+
+		if (held is not null && Holder(path) == stale)
+			Discard(path);
+	}
+
+	/// <summary>
+	/// Takes the lock every taker and every remover of a claim holds while it looks at the name and acts.
+	/// </summary>
+	/// <param name="path">Where the claim is.</param>
+	/// <returns>The lock, or <see langword="null"/> when it could not be had in five seconds.</returns>
+	/// <remarks>
+	/// An open file beside the folder of claims, one for all of them: it is held for the length of a
+	/// look and a move. The system releases it when its holder dies, so it cannot itself be left behind.
+	/// </remarks>
+	private static FileStream Hold(string path)
+	{
+		var guard = Path.GetDirectoryName(path) + LockExtension;
 
 		for (var waited = 0; ; waited++)
 		{
-			FileStream held;
-
 			try
 			{
-				held = new FileStream(guard, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+				return new FileStream(guard, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 			}
 			catch (Exception error) when (error is IOException or UnauthorizedAccessException)
 			{
 				if (waited >= 500)
-					return;
+					return null;
 
 				Thread.Sleep(10);
-
-				continue;
 			}
-
-			using (held)
-			{
-				if (Holder(path) == stale)
-					Discard(path);
-			}
-
-			return;
 		}
 	}
 

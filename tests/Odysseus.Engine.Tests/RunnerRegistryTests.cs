@@ -123,47 +123,53 @@ public class RunnerRegistryTests : OdysseusTestBase
 	public async Task TwoServersRacingForOneProjectProduceExactlyOneRunner()
 	{
 		const int racers = 8;
+		const int rounds = 50;
 
-		var taken = new ConcurrentBag<string>();
-		var refused = new ConcurrentBag<RunnerAlreadyRunningException>();
-		var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-		var racing = Enumerable.Range(0, racers).Select(i => Task.Run(async () =>
+		// Round after round, a project each: a race that is lost one time in three passes two times in three.
+		for (var round = 0; round < rounds; round++)
 		{
-			// Each racer is its own registry over one root, which is what two servers on one machine are.
-			var registry = Registry();
+			var project = $"prj_{round}";
+			var taken = new ConcurrentBag<string>();
+			var refused = new ConcurrentBag<RunnerAlreadyRunningException>();
+			var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-			await ready.Task;
-
-			try
+			var racing = Enumerable.Range(0, racers).Select(i => Task.Run(async () =>
 			{
-				var home = registry.Claim("prj_one", $"dep_{i}");
+				// Each racer is its own registry over one root, which is what two servers on one machine are.
+				var registry = Registry();
 
-				taken.Add(Path.GetFileName(home.Directory));
+				await ready.Task;
 
-				// A runner that took the project and then announced itself, which is what makes the claim
-				// stick against everybody who arrives afterwards.
-				home.WriteRecord(Record($"dep_{i}", Environment.ProcessId));
-			}
-			catch (RunnerAlreadyRunningException refusal)
-			{
-				refused.Add(refusal);
-			}
-		}, CancellationToken)).ToArray();
+				try
+				{
+					var home = registry.Claim(project, $"dep_{round}_{i}");
 
-		ready.SetResult();
+					taken.Add(Path.GetFileName(home.Directory));
 
-		await Task.WhenAll(racing);
+					// A runner that took the project and then announced itself, which is what makes the
+					// claim stick against everybody who arrives afterwards.
+					home.WriteRecord(Record($"dep_{round}_{i}", Environment.ProcessId));
+				}
+				catch (RunnerAlreadyRunningException refusal)
+				{
+					refused.Add(refusal);
+				}
+			}, CancellationToken)).ToArray();
 
-		AreEqual(1, taken.Count,
-			$"{taken.Count} sessions started a runner on one project: {string.Join(", ", taken)}.");
+			ready.SetResult();
 
-		AreEqual(racers - 1, refused.Count, "somebody neither took the project nor was told why.");
+			await Task.WhenAll(racing);
 
-		foreach (var refusal in refused)
-			IsTrue(refusal.Message.Length > 0, "a refusal said nothing.");
+			AreEqual(1, taken.Count,
+				$"round {round}: {taken.Count} sessions started a runner on one project: {string.Join(", ", taken)}.");
 
-		AreEqual(1, Registry().Records().Count, "more than one runner was recorded against one project.");
+			AreEqual(racers - 1, refused.Count, $"round {round}: somebody neither took the project nor was told why.");
+
+			foreach (var refusal in refused)
+				IsTrue(refusal.Message.Length > 0, "a refusal said nothing.");
+		}
+
+		AreEqual(rounds, Registry().Records().Count, "more than one runner was recorded against one project.");
 	}
 
 	/// <summary>
