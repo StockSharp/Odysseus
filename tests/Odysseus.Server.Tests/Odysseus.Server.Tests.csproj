@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<PackageReference Include="MSTest" />
+		<PackageReference Include="JunitXml.TestLogger" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!--
+		The connector loader arrives transitively through the server, which is where the composition
+		root wires it. Declaring it here would be a second project naming the broker layer for the sake
+		of one refusal, and the point of that refusal is that the server's own start-up produces it.
+		-->
+		<ProjectReference Include="..\Odysseus.TestKit\Odysseus.TestKit.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Server\Odysseus.Server.csproj" />
+	</ItemGroup>
+
+</Project>

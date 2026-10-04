@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<!-- The tests reach the parts that decide how an adapter is configured, which nothing outside needs. -->
+		<InternalsVisibleTo Include="Odysseus.Broker.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.Domain\Odysseus.Domain.csproj" />
+		<ProjectReference Include="..\Odysseus.Application\Odysseus.Application.csproj" />
+		<ProjectReference Include="..\Odysseus.Evaluation\Odysseus.Evaluation.csproj" />
+		<ProjectReference Include="..\Odysseus.Packages\Odysseus.Packages.csproj" />
+		<ProjectReference Include="..\Odysseus.Platform\Odysseus.Platform.csproj" />
+	</ItemGroup>
+
+</Project>

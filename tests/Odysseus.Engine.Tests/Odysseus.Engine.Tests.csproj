@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<PackageReference Include="MSTest" />
+		<PackageReference Include="JunitXml.TestLogger" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.TestKit\Odysseus.TestKit.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Domain\Odysseus.Domain.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Application\Odysseus.Application.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Engine\Odysseus.Engine.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!--
+		Referenced so that building these tests builds the misbehaving worker they point the host at,
+		never so that they link it: a worker is reached by path, which is the whole point of it.
+		-->
+		<ProjectReference Include="..\Odysseus.WorkerStub\Odysseus.WorkerStub.csproj" ReferenceOutputAssembly="false" />
+
+		<!-- The same for the runner: a process that outlives its parent is reached by path, never linked. -->
+		<ProjectReference Include="..\Odysseus.RunnerStub\Odysseus.RunnerStub.csproj" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+</Project>

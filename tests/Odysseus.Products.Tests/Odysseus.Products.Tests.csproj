@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<PackageReference Include="MSTest" />
+		<PackageReference Include="JunitXml.TestLogger" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.TestKit\Odysseus.TestKit.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Application\Odysseus.Application.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Products\Odysseus.Products.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!--
+		Referenced so that building these tests builds the misbehaving installer they point the driver
+		at, never so that they link it: another program is reached by path, which is the whole point of
+		driving one rather than linking it.
+		-->
+		<ProjectReference Include="..\Odysseus.InstallerStub\Odysseus.InstallerStub.csproj" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+</Project>

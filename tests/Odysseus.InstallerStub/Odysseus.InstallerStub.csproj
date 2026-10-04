@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+
+	<!--
+	No reference to anything. What this prints is another vendor's output shape, reproduced from their
+	source, and writing it against our own constants for that shape would make the pair agree with each
+	other rather than with the program they describe.
+	-->
+
+</Project>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<PackageReference Include="MSTest" />
+		<PackageReference Include="JunitXml.TestLogger" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.TestKit\Odysseus.TestKit.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Spec\Odysseus.Spec.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.CodeGen\Odysseus.CodeGen.csproj" />
+		<!-- The reviewed copy of the generated source names the trading platform, so it is compiled with
+		     the tests: a translator change that would not build is caught by the build rather than by a
+		     later run. -->
+		<ProjectReference Include="..\..\src\Odysseus.Platform\Odysseus.Platform.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- The tests drive the whole of a deployment's lifetime with a stand-in broker, which nothing outside needs. -->
+		<InternalsVisibleTo Include="Odysseus.Runner.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.Domain\Odysseus.Domain.csproj" />
+		<ProjectReference Include="..\Odysseus.Application\Odysseus.Application.csproj" />
+		<ProjectReference Include="..\Odysseus.Evaluation\Odysseus.Evaluation.csproj" />
+		<ProjectReference Include="..\Odysseus.Engine\Odysseus.Engine.csproj" />
+		<ProjectReference Include="..\Odysseus.Platform\Odysseus.Platform.csproj" />
+		<!--
+		The one thing that makes this a runner rather than a second server: it reaches a broker through
+		exactly the path the server does, so it inherits PaperOnlyGuard instead of reimplementing anything
+		near it. Nothing here is internal to that project - the trader arrives as a port off the public
+		factory - so no InternalsVisibleTo is needed in either direction.
+		-->
+		<ProjectReference Include="..\Odysseus.Broker\Odysseus.Broker.csproj" />
+	</ItemGroup>
+
+</Project>

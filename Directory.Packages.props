@@ -1,0 +1,33 @@
+<Project>
+
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageVersion Include="Basic.Reference.Assemblies.Net100" Version="1.8.11" />
+		<PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+		<PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+		<PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+		<PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
+		<!--
+		How a broker connector is downloaded while the server runs. No connector is listed here or in any
+		project file: a connector is chosen by the operator, fetched as a published package and loaded
+		into a context of its own, and a product that compiled one in would be a product for one broker.
+		-->
+		<PackageVersion Include="NuGet.Protocol" Version="7.9.0" />
+		<!-- Pinned above the version Microsoft.Data.Sqlite brings in transitively, which carries a known vulnerability. -->
+		<PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.13" />
+		<PackageVersion Include="JsonSchema.Net" Version="9.4.0" />
+		<PackageVersion Include="MSTest" Version="4.0.2" />
+		<PackageVersion Include="MSTest.TestFramework" Version="4.0.2" />
+		<!--
+		Writes the run out as JUnit xml, which the CI pipeline publishes as test results. Referenced by
+		every project that runs tests, so a failure in the pipeline arrives as a named failed test rather
+		than as a job that exited non-zero. Nothing
+		is compiled against it - it is a logger the test runner loads from the output folder.
+		-->
+		<PackageVersion Include="JunitXml.TestLogger" Version="8.0.0" />
+	</ItemGroup>
+
+</Project>

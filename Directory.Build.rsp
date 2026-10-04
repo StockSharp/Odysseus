@@ -1,0 +1,8 @@
+# MSBuild adds these switches to every command-line build of a project or solution under this folder.
+# An IDE does not read the file.
+#
+# A solution builds a project that is not one of its own in that project's default configuration. The
+# trading platform is such a project, so a release of the product would carry a debug build of it.
+# With this off, the platform, and everything it references in turn, is built in the configuration the
+# product is built in.
+-p:ShouldUnsetParentConfigurationAndPlatform=false

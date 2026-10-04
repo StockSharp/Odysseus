@@ -1,0 +1,17 @@
+# Machine-specific build settings, such as a StockSharp checkout that is kept somewhere else.
+Directory.Build.local.props
+
+# Build output
+bin/
+obj/
+artifacts/
+
+# Broker credentials. Never versioned, never leaves this machine.
+*.secrets
+*.key
+
+# Test run artefacts
+TestResults/
+
+# Runtime data: the projects root a server or a test run creates beside the repository.
+projects/

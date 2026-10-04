@@ -1,0 +1,82 @@
+<Project>
+
+	<!--
+	A host that runs candidates needs the worker beside it, in a folder of its own. The two are one
+	deployment - the host refuses a worker whose engine differs from its own at the handshake, so
+	shipping them apart is not a supported arrangement - but they are two applications, and their
+	dependency closures are not the same. Merged into one folder the copy silently picks a winner for
+	every file whose name they share: the worker reaches NuGet.Configuration 7.0.1 through the trading
+	platform while the host resolves 7.9.0 through NuGet.Protocol, and the host that lost that race did
+	not start at all. A folder each keeps every deployment exactly as it was built, manifest and
+	assemblies agreeing.
+
+	The reference to the worker only orders the build; this is what puts its output where the host will
+	look for it. NeedsWorker is set by the two hosts and by nothing else, so the worker itself never
+	imports this and cannot copy itself into itself.
+	-->
+	<Target Name="CopyWorkerBesideHost" AfterTargets="Build" Condition="'$(NeedsWorker)' == 'true'">
+
+		<!--
+		Only asked where the worker was built, not to build it: the project reference that orders the
+		build has already done that, and building it twice would have two writers on one output folder.
+		-->
+		<MSBuild Projects="$(MSBuildThisFileDirectory)src\Odysseus.Worker\Odysseus.Worker.csproj"
+		         Targets="GetTargetPath"
+		         Properties="Configuration=$(Configuration)">
+			<Output TaskParameter="TargetOutputs" ItemName="_WorkerTarget" />
+		</MSBuild>
+
+		<PropertyGroup>
+			<_WorkerDirectory>%(_WorkerTarget.RootDir)%(_WorkerTarget.Directory)</_WorkerDirectory>
+		</PropertyGroup>
+
+		<ItemGroup>
+			<_WorkerFiles Include="$(_WorkerDirectory)**\*" />
+		</ItemGroup>
+
+		<!-- The folder name is the one WorkerOptions.Locate looks in. -->
+		<Copy SourceFiles="@(_WorkerFiles)"
+		      DestinationFiles="@(_WorkerFiles->'$(OutDir)worker\%(RecursiveDir)%(Filename)%(Extension)')"
+		      SkipUnchangedFiles="true" />
+
+	</Target>
+
+	<!--
+	The same again for the runner, and for the same reason twice over. The two are one deployment - a
+	session refuses a runner whose engine differs from its own at the handshake - but they are separate
+	applications whose dependency closures differ, and here they differ more than the worker's does: the
+	runner reaches NuGet through the package layer because it downloads its own connector, and the
+	worker's closure deliberately contains none of that. Merged into one folder the copy picks a winner
+	per file name, and whichever application asked for the other version fails to load it.
+
+	NeedsRunner is set by the two hosts and by nothing else, so the runner never imports this and cannot
+	copy itself into itself.
+	-->
+	<Target Name="CopyRunnerBesideHost" AfterTargets="Build" Condition="'$(NeedsRunner)' == 'true'">
+
+		<!--
+		Only asked where the runner was built, not to build it: the project reference that orders the
+		build has already done that, and building it twice would have two writers on one output folder.
+		-->
+		<MSBuild Projects="$(MSBuildThisFileDirectory)src\Odysseus.Runner\Odysseus.Runner.csproj"
+		         Targets="GetTargetPath"
+		         Properties="Configuration=$(Configuration)">
+			<Output TaskParameter="TargetOutputs" ItemName="_RunnerTarget" />
+		</MSBuild>
+
+		<PropertyGroup>
+			<_RunnerDirectory>%(_RunnerTarget.RootDir)%(_RunnerTarget.Directory)</_RunnerDirectory>
+		</PropertyGroup>
+
+		<ItemGroup>
+			<_RunnerFiles Include="$(_RunnerDirectory)**\*" />
+		</ItemGroup>
+
+		<!-- The folder name is the one RunnerOptions.Locate looks in. -->
+		<Copy SourceFiles="@(_RunnerFiles)"
+		      DestinationFiles="@(_RunnerFiles->'$(OutDir)runner\%(RecursiveDir)%(Filename)%(Extension)')"
+		      SkipUnchangedFiles="true" />
+
+	</Target>
+
+</Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<!-- The tests reach the sizing rule, which nothing outside this assembly calls. -->
+		<InternalsVisibleTo Include="Odysseus.Application.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.Domain\Odysseus.Domain.csproj" />
+		<ProjectReference Include="..\Odysseus.Spec\Odysseus.Spec.csproj" />
+		<ProjectReference Include="..\Odysseus.Evaluation\Odysseus.Evaluation.csproj" />
+	</ItemGroup>
+</Project>

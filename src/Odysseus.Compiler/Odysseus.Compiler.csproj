@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<PackageReference Include="Basic.Reference.Assemblies.Net100" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.Application\Odysseus.Application.csproj" />
+		<ProjectReference Include="..\Odysseus.CodeGen\Odysseus.CodeGen.csproj" />
+	</ItemGroup>
+
+</Project>

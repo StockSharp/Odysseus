@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<PackageReference Include="MSTest" />
+		<PackageReference Include="JunitXml.TestLogger" />
+
+		<!-- Only the tests validate against the published schema; nothing shipped depends on it. -->
+		<PackageReference Include="JsonSchema.Net" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.TestKit\Odysseus.TestKit.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Spec\Odysseus.Spec.csproj" />
+	</ItemGroup>
+
+</Project>

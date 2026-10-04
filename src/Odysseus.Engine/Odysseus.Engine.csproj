@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<!-- The tests reach the parts that decide how a worker is launched, which nothing outside needs. -->
+		<InternalsVisibleTo Include="Odysseus.Engine.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.Domain\Odysseus.Domain.csproj" />
+		<ProjectReference Include="..\Odysseus.Application\Odysseus.Application.csproj" />
+	</ItemGroup>
+
+</Project>

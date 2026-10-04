@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<!--
+		The installer console is driven as a process, so nothing here is compiled against it and this
+		project owns no package at all: it starts a program, reads what it printed and turns that into
+		the product's own vocabulary. Linking the vendor's installer library instead would pull a
+		cross-repository reference, a StockSharp account, a licence and a private feed into a server
+		that fetches public packages anonymously.
+		-->
+		<ProjectReference Include="..\Odysseus.Application\Odysseus.Application.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,79 @@
+{
+  "name": "Volume confirmed breakout",
+  "thesis": "A close above a recent high carries on when participation confirms it.",
+  "allowLong": true,
+  "allowShort": false,
+  "timeFrame": "00:05:00",
+  "warmupBars": 61,
+  "entries": [
+    {
+      "id": "e1",
+      "direction": "Long",
+      "condition": {
+        "kind": "All",
+        "conditions": [
+          {
+            "kind": "Compare",
+            "left": { "kind": "Field", "field": "Close" },
+            "operator": "GreaterThan",
+            "right": {
+              "kind": "Indicator",
+              "name": "highest",
+              "length": { "kind": "Parameter", "name": "BreakoutPeriod" },
+              "source": "High",
+              "offset": 1
+            }
+          },
+          {
+            "kind": "Compare",
+            "left": { "kind": "Field", "field": "Volume" },
+            "operator": "GreaterThan",
+            "right": {
+              "kind": "Indicator",
+              "name": "volumeSma",
+              "length": { "kind": "Constant", "value": 20 },
+              "offset": 1
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "exits": [
+    {
+      "id": "x1",
+      "kind": "AtrStop",
+      "direction": "Long",
+      "length": { "kind": "Constant", "value": 14 },
+      "multiplier": { "kind": "Constant", "value": 2 }
+    },
+    {
+      "id": "x2",
+      "kind": "SessionEnd",
+      "direction": "Long"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "BreakoutPeriod",
+      "type": "Integer",
+      "default": 20,
+      "minimum": 10,
+      "maximum": 60,
+      "step": 5,
+      "optimizable": true
+    }
+  ],
+  "risk": {
+    "maxPositionPercent": 0.1,
+    "maxDailyLossPercent": 0.02
+  },
+  "assumptions": [
+    "The breakout is measured on the bar before the current one, so the high being crossed is one the market already printed.",
+    "Volume confirmation uses the same window on the bar before, for the same reason."
+  ],
+  "invalidationConditions": [
+    "Breakouts on this instrument are followed by a move back through the level more often than they carry on.",
+    "The edge is smaller than the spread it pays to cross."
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://odysseus.dev/schemas/error/1.0",
+  "title": "ToolError",
+  "description": "Structured failure returned by any Odysseus MCP tool instead of a successful payload. A tool never degrades silently: when data, entitlements or preconditions are missing it returns this object with the reason rather than a result computed on incomplete input. Raw exception text, stack traces, exception type names, host filesystem paths and broker credentials MUST NEVER appear in any field of this object; the server logs the technical detail under the same correlation id and returns only the sanitized wording below.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "category",
+    "message",
+    "remediation",
+    "correlationId"
+  ],
+  "properties": {
+    "category": {
+      "description": "Machine-readable class of the failure. The agent branches on this value; the wording of 'message' is not part of the contract and may change.",
+      "type": "string",
+      "enum": [
+        "InvalidRequest",
+        "SpecValidation",
+        "PreconditionFailed",
+        "NotFound",
+        "PermissionDenied",
+        "PolicyViolation",
+        "BudgetExhausted",
+        "LimitExceeded",
+        "RiskRejected",
+        "ConfirmationRequired",
+        "AnalyzerViolation",
+        "CompilationFailed",
+        "InsufficientData",
+        "IntegrityViolation",
+        "ConfigurationInvalid",
+        "AuthenticationFailed",
+        "CapabilityUnavailable",
+        "UpstreamUnavailable",
+        "UpstreamRateLimited",
+        "Conflict",
+        "Timeout",
+        "ResourceExhausted",
+        "WorkerFailure",
+        "StorageFailure",
+        "Cancelled",
+        "Internal"
+      ],
+      "$comment": "InvalidRequest: tool arguments violate the input schema or are inconsistent with each other. SpecValidation: StrategySpec failed schema or semantic validation before a candidate was created. PreconditionFailed: server state does not allow the step, for example a paper start requested for a candidate the closed data has never seen. NotFound: the referenced project, dataset, candidate, run or job does not exist or is not visible to this session. PermissionDenied: a published tool refuses an operation that the run mode in effect does not allow the caller to perform, for example a request to change the mode the server was started in; a tool that the current mode does not offer at all is absent from the tool list rather than published and refused. PolicyViolation: a deterministic policy refuses, for example a second use of the closed holdout slice. BudgetExhausted: the project research budget is consumed. LimitExceeded: a configured limit other than the research budget was hit, for example specification complexity, optimizable parameter count, hosted session limits or the tool response size cap. RiskRejected: the deterministic risk gate refused an order before it reached the broker. ConfirmationRequired: the action waits for a user confirmation given outside the agent channel. AnalyzerViolation: the strategy rules rejected the candidate source. CompilationFailed: Roslyn reported compile errors for the candidate. InsufficientData: history coverage, warmup or account data is not sufficient to answer honestly. IntegrityViolation: a stored artifact does not match its recorded SHA-256 hash. ConfigurationInvalid: the server or profile configuration is not acceptable, for example a connector that cannot be proven to be pointed at a paper account. AuthenticationFailed: the broker credentials are missing, rejected, or the account is not usable. CapabilityUnavailable: the account or subscription lacks the required entitlement, for example a data feed or option trading. UpstreamUnavailable: the broker or another external dependency is unreachable or returned an unusable response. UpstreamRateLimited: the broker throttled the request and the retry window is not over. Conflict: the request collides with existing state, for example an operationKey replayed with a different payload or a second candidate started on paper. Timeout: the operation exceeded its configured time limit. ResourceExhausted: the isolated worker hit its memory or machine-time limit. WorkerFailure: the isolated worker crashed or failed the versioned handshake, which is the server's own machinery rather than the candidate: the attempt is not charged to the research budget and the same call may be repeated. StorageFailure: what the server had to write down could not be written; like WorkerFailure it is not charged and the call may be repeated. Cancelled: the operation was cancelled before completion. Internal: unexpected server fault; the technical detail exists only in the server log under this correlation id."
+    },
+    "message": {
+      "description": "Human-readable statement of what went wrong, written for the agent and for the user reading the audit log. Sanitized: it names domain entities and measured numbers, and never carries exception text, stack traces, host filesystem paths or secrets.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "remediation": {
+      "description": "What to do next, phrased as a concrete action the agent or the user can take, for example which tool to call, which field to change, which limit to lower or which entitlement to obtain. When nothing can be done by the caller, it says so explicitly instead of being empty.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "correlationId": {
+      "description": "Correlation identifier shared by this response, the JSONL technical log entries and the audit events of the same operation, so a failure can be traced without exposing server internals to the agent. Opaque, server-generated, URL-safe token of 1 to 64 characters from A-Z, a-z, 0-9, hyphen and underscore.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+    }
+  }
+}

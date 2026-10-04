@@ -1,0 +1,30 @@
+<Project>
+
+	<!-- Machine-specific settings that are never committed, such as a StockSharpSource of its own. -->
+	<Import Project="Directory.Build.local.props" Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.local.props')" />
+
+	<PropertyGroup>
+		<!--
+		The trading platform is built from source. Its repository is looked for beside this one, in the
+		folder the other StockSharp repositories look for it in as well.
+		-->
+		<StockSharpSource Condition="'$(StockSharpSource)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'StockSharp (GitHub)'))</StockSharpSource>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<!-- Nullable reference types are deliberately off: `?` is used for value types only. -->
+		<Nullable>disable</Nullable>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<EnableNETAnalyzers>true</EnableNETAnalyzers>
+		<AnalysisLevel>latest</AnalysisLevel>
+		<Deterministic>true</Deterministic>
+		<ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Company>Odysseus</Company>
+		<Product>Odysseus</Product>
+	</PropertyGroup>
+
+</Project>

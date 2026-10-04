@@ -1,0 +1,83 @@
+# What this repository is gated by: restore, build the whole solution in Release, run every test.
+#
+# The build step is not a formality. TreatWarningsAsErrors is on for every project and
+# GenerateDocumentationFile is on for the source ones, so a warning, or a public member without an XML
+# doc, fails here before a single test runs.
+#
+# Nothing has to be configured for this workflow to pass: no secret, no variable. The tests that need a
+# broker account look for a credential file the environment names, do not find one, and call
+# Assert.Inconclusive, which MSTest reports as skipped - the run still exits zero. Every other test reads
+# history that ships in the repository or is generated on the spot.
+
+name: build
+
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch or pull request makes the run in progress worthless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Directory.Build.props turns on ContinuousIntegrationBuild when this is `true`, which is what makes
+  # the build deterministic. GitHub Actions already sets CI to `true`; it is written out here because
+  # the build depends on it, and a dependency nobody can see is one nobody knows to keep.
+  CI: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  SOLUTION: Odysseus.slnx
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    # Two repositories are checked out side by side, and every command below runs in this one.
+    defaults:
+      run:
+        working-directory: Odysseus
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: Odysseus
+
+      # The trading platform is built from source, at the tip of its master. Directory.Build.props looks
+      # for its repository beside this one, under exactly this folder name.
+      - uses: actions/checkout@v7
+        with:
+          repository: StockSharp/StockSharp
+          ref: master
+          path: 'StockSharp (GitHub)'
+
+      # Pinned to a patch rather than to `10.0.x`. With TreatWarningsAsErrors on, every analyser warning a
+      # newer SDK introduces turns a commit that changed nothing into a red build, so the SDK moves when
+      # somebody changes this line and watches what happens.
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.400
+
+      - run: dotnet restore "$SOLUTION"
+
+      - run: dotnet build "$SOLUTION" --configuration Release --no-restore
+
+      # One JUnit report per test assembly. A verbose failure body carries the assertion message and the
+      # stack into the report itself. LogFilePath is absolute on purpose: a relative one is resolved
+      # against each test project in turn.
+      # -m:1 runs the test assemblies one after another. Several of them start real processes - the runner,
+      # the worker, the installer stub, the server the end-to-end suite talks to - and running those against
+      # each other turns a shared machine into the thing under test: a handshake misses its timeout, a
+      # process is slow to start, a deadline passes while the work it was timing waited for a core.
+      - run: >
+          dotnet test "$SOLUTION" --configuration Release --no-build -m:1
+          --logger "junit;LogFilePath=$GITHUB_WORKSPACE/artifacts/test-results/{assembly}.xml;FailureBodyFormat=Verbose"
+
+      # A run that failed is the one whose results are worth having.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-results
+          path: artifacts/test-results/
+          retention-days: 7

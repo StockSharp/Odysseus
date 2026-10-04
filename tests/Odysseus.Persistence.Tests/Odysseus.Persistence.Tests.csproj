@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<PackageReference Include="MSTest" />
+		<PackageReference Include="JunitXml.TestLogger" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.TestKit\Odysseus.TestKit.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Domain\Odysseus.Domain.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Application\Odysseus.Application.csproj" />
+		<ProjectReference Include="..\..\src\Odysseus.Persistence\Odysseus.Persistence.csproj" />
+		<!--
+		The bars of a dataset are kept in the trading engine's own market-data storage, so the store
+		these tests drive is given the real one rather than a stand-in that would prove nothing about the
+		format a run actually reads.
+		-->
+		<ProjectReference Include="..\..\src\Odysseus.Platform\Odysseus.Platform.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,594 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://odysseus.dev/schemas/strategy-spec/1.0",
+  "title": "StrategySpec",
+  "description": "A strategy described completely enough to be translated into C# without anything being guessed. This is the document an agent writes and sends to propose_spec and validate_spec, and it is the only schema in this product that describes an input. What the tools return is not specified here: an MCP tool describes itself, and a static copy of an output shape can only drift from it. The server reads property names and enum values case-insensitively; the canonical form is the one written here, and it is what the server writes back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "thesis",
+    "allowLong",
+    "allowShort",
+    "timeFrame",
+    "warmupBars",
+    "entries",
+    "exits",
+    "parameters",
+    "risk"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name a person would use for the strategy."
+    },
+    "thesis": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why the strategy is expected to work, in one or two sentences. It is not decoration: a specification whose thesis says nothing describes a shape rather than a claim about the market, and nothing later can be measured against it."
+    },
+    "allowLong": {
+      "type": "boolean",
+      "description": "Whether long positions are allowed."
+    },
+    "allowShort": {
+      "type": "boolean",
+      "description": "Whether short positions are allowed."
+    },
+    "timeFrame": {
+      "type": "string",
+      "pattern": "^(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+      "description": "Length of the candles the rules are evaluated on, as hh:mm:ss. Part of the hypothesis rather than of the data: an average of twenty five-minute bars and an average of twenty daily ones are different claims about the market, so a run over bars of another length is refused rather than quietly measured.",
+      "examples": [
+        "00:05:00",
+        "01:00:00",
+        "1.00:00:00"
+      ]
+    },
+    "warmupBars": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 50000,
+      "description": "Candles that must pass before any rule may act. It has to cover the longest window any indicator in the specification looks back over, or the first signals are computed from an indicator that has not filled. The ceiling is the same one an indicator length is held to: warm-up is candles a run spends before it may act, and a warm-up longer than the history is a run that never trades."
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Conditions that open a position.",
+      "items": {
+        "$ref": "#/$defs/entryRule"
+      }
+    },
+    "exits": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Conditions that close a position. A specification with no exit describes a strategy that never closes, which is not a strategy.",
+      "items": {
+        "$ref": "#/$defs/exitRule"
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "description": "Numbers the optimizer may search. Declaring a range here rather than writing a number into a rule is what keeps the division of labour honest: the agent decides what a strategy is, the optimizer decides what its numbers are. A constant buried in a rule is a number nobody searched and nobody can report on.",
+      "items": {
+        "$ref": "#/$defs/parameter"
+      }
+    },
+    "risk": {
+      "$ref": "#/$defs/risk"
+    },
+    "assumptions": {
+      "type": "array",
+      "description": "What was assumed while writing this down.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "invalidationConditions": {
+      "type": "array",
+      "description": "What would show the thesis to be wrong.",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "entryRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "direction",
+        "condition"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier used by reports and diagnostics."
+        },
+        "direction": {
+          "$ref": "#/$defs/tradeDirection"
+        },
+        "condition": {
+          "$ref": "#/$defs/expression"
+        }
+      }
+    },
+    "exitRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "direction"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier used by reports and diagnostics."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "Condition",
+            "AtrStop",
+            "AtrTarget",
+            "TimeExit",
+            "SessionEnd"
+          ],
+          "description": "How the exit works. Condition needs 'condition'; AtrStop and AtrTarget need 'length' and 'multiplier'; TimeExit needs 'length' in candles; SessionEnd needs nothing."
+        },
+        "direction": {
+          "$ref": "#/$defs/tradeDirection"
+        },
+        "condition": {
+          "$ref": "#/$defs/expression"
+        },
+        "length": {
+          "$ref": "#/$defs/expression"
+        },
+        "multiplier": {
+          "$ref": "#/$defs/expression"
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type",
+        "default",
+        "minimum",
+        "maximum",
+        "step"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name the rules refer to with a Parameter node."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Integer",
+            "Decimal"
+          ],
+          "description": "Integer for window lengths and candle counts, Decimal for multipliers and thresholds."
+        },
+        "default": {
+          "type": "number",
+          "description": "Value used before any search."
+        },
+        "minimum": {
+          "type": "number",
+          "description": "Smallest value the search may try."
+        },
+        "maximum": {
+          "type": "number",
+          "description": "Largest value the search may try."
+        },
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Distance between values the search tries."
+        },
+        "optimizable": {
+          "type": "boolean",
+          "description": "Whether the search may vary it at all. Absent means it may."
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxPositionPercent",
+        "maxDailyLossPercent"
+      ],
+      "description": "Limits that hold regardless of what the rules say.",
+      "properties": {
+        "maxPositionPercent": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "description": "Largest share of the account one position may take, as a fraction. This is what sizes a position: the run buys that much of the instrument at the first price of the slice and holds the size for the whole run."
+        },
+        "maxDailyLossPercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Loss in one market day, as a fraction of the account, after which the strategy closes what it holds and opens nothing until the next day. Zero for no limit."
+        }
+      }
+    },
+    "tradeDirection": {
+      "type": "string",
+      "enum": [
+        "Long",
+        "Short"
+      ]
+    },
+    "candleField": {
+      "type": "string",
+      "enum": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume"
+      ]
+    },
+    "offset": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "How many candles back to read, counted from the one being evaluated. Absent means the current candle."
+    },
+    "expression": {
+      "description": "A node of the expression tree. Every node says what it is with 'kind'; an unrecognised kind is refused with the list of the ones that exist rather than treated as something adjacent.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/allNode"
+        },
+        {
+          "$ref": "#/$defs/anyNode"
+        },
+        {
+          "$ref": "#/$defs/notNode"
+        },
+        {
+          "$ref": "#/$defs/compareNode"
+        },
+        {
+          "$ref": "#/$defs/arithmeticNode"
+        },
+        {
+          "$ref": "#/$defs/absNode"
+        },
+        {
+          "$ref": "#/$defs/fieldNode"
+        },
+        {
+          "$ref": "#/$defs/parameterNode"
+        },
+        {
+          "$ref": "#/$defs/constantNode"
+        },
+        {
+          "$ref": "#/$defs/indicatorNode"
+        },
+        {
+          "$ref": "#/$defs/crossNode"
+        },
+        {
+          "$ref": "#/$defs/positionNode"
+        },
+        {
+          "$ref": "#/$defs/sessionNode"
+        }
+      ]
+    },
+    "allNode": {
+      "title": "All",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "conditions"
+      ],
+      "properties": {
+        "kind": {
+          "const": "All"
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        }
+      }
+    },
+    "anyNode": {
+      "title": "Any",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "conditions"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Any"
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        }
+      }
+    },
+    "notNode": {
+      "title": "Not",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "condition"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Not"
+        },
+        "condition": {
+          "$ref": "#/$defs/expression"
+        }
+      }
+    },
+    "compareNode": {
+      "title": "Compare",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "left",
+        "operator",
+        "right"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Compare"
+        },
+        "left": {
+          "$ref": "#/$defs/expression"
+        },
+        "operator": {
+          "type": "string",
+          "enum": [
+            "GreaterThan",
+            "GreaterOrEqual",
+            "LessThan",
+            "LessOrEqual"
+          ]
+        },
+        "right": {
+          "$ref": "#/$defs/expression"
+        }
+      }
+    },
+    "arithmeticNode": {
+      "title": "Arithmetic",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "operands"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "Add",
+            "Subtract",
+            "Multiply",
+            "Divide",
+            "Min",
+            "Max"
+          ]
+        },
+        "operands": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        }
+      }
+    },
+    "absNode": {
+      "title": "Abs",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Abs"
+        },
+        "value": {
+          "$ref": "#/$defs/expression"
+        }
+      }
+    },
+    "fieldNode": {
+      "title": "Field",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "field"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Field"
+        },
+        "field": {
+          "$ref": "#/$defs/candleField"
+        },
+        "offset": {
+          "$ref": "#/$defs/offset"
+        }
+      }
+    },
+    "parameterNode": {
+      "title": "Parameter",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "name"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Parameter"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of a parameter declared in 'parameters'."
+        }
+      }
+    },
+    "constantNode": {
+      "title": "Constant",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Constant"
+        },
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "indicatorNode": {
+      "title": "Indicator",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "name",
+        "length"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Indicator"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "One of the names get_indicator_catalog publishes. A name outside it is refused with the nearest match rather than guessed at."
+        },
+        "length": {
+          "$ref": "#/$defs/expression"
+        },
+        "source": {
+          "$ref": "#/$defs/candleField"
+        },
+        "offset": {
+          "$ref": "#/$defs/offset"
+        }
+      }
+    },
+    "crossNode": {
+      "title": "Cross",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "left",
+        "direction",
+        "right"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Cross"
+        },
+        "left": {
+          "$ref": "#/$defs/expression"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "Above",
+            "Below"
+          ],
+          "description": "Which way the left side crosses the right."
+        },
+        "right": {
+          "$ref": "#/$defs/expression"
+        }
+      }
+    },
+    "positionNode": {
+      "title": "Position",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "state"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Position"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "Flat",
+            "Long",
+            "Short"
+          ]
+        }
+      }
+    },
+    "sessionNode": {
+      "title": "Session",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "notBefore",
+        "notAfter"
+      ],
+      "properties": {
+        "kind": {
+          "const": "Session"
+        },
+        "notBefore": {
+          "type": "string",
+          "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$",
+          "description": "Earliest time of the market day the rule may act, in the exchange's own zone."
+        },
+        "notAfter": {
+          "type": "string",
+          "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$",
+          "description": "Latest time of the market day the rule may act, in the exchange's own zone."
+        }
+      }
+    }
+  }
+}

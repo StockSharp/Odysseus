@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<AssemblyName>odysseus</AssemblyName>
+		<RootNamespace>Odysseus.Cli</RootNamespace>
+
+		<!-- Candidates run in the worker, so the worker is built and copied beside this host. -->
+		<NeedsWorker>true</NeedsWorker>
+
+		<!-- Deployments run in the runner, which outlives this command, so it is built and copied beside it too. -->
+		<NeedsRunner>true</NeedsRunner>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.Application\Odysseus.Application.csproj" />
+		<ProjectReference Include="..\Odysseus.Broker\Odysseus.Broker.csproj" />
+		<ProjectReference Include="..\Odysseus.Compiler\Odysseus.Compiler.csproj" />
+		<ProjectReference Include="..\Odysseus.Domain\Odysseus.Domain.csproj" />
+		<ProjectReference Include="..\Odysseus.Engine\Odysseus.Engine.csproj" />
+		<ProjectReference Include="..\Odysseus.Persistence\Odysseus.Persistence.csproj" />
+		<ProjectReference Include="..\Odysseus.Spec\Odysseus.Spec.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Referenced so that building this host builds the worker it launches, never so that it links it. -->
+		<ProjectReference Include="..\Odysseus.Worker\Odysseus.Worker.csproj" ReferenceOutputAssembly="false" Private="false" />
+
+		<!-- The same for the runner: a deployment is reached by path, which is what lets it outlive this process. -->
+		<ProjectReference Include="..\Odysseus.Runner\Odysseus.Runner.csproj" ReferenceOutputAssembly="false" Private="false" />
+	</ItemGroup>
+
+</Project>

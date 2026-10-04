@@ -1,0 +1,43 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Odysseus.Application/Odysseus.Application.csproj" />
+    <Project Path="src/Odysseus.Broker/Odysseus.Broker.csproj" />
+    <Project Path="src/Odysseus.CodeGen/Odysseus.CodeGen.csproj" />
+    <Project Path="src/Odysseus.Compiler/Odysseus.Compiler.csproj" />
+    <Project Path="src/Odysseus.Domain/Odysseus.Domain.csproj" />
+    <Project Path="src/Odysseus.Evaluation/Odysseus.Evaluation.csproj" />
+    <Project Path="src/Odysseus.Packages/Odysseus.Packages.csproj" />
+    <Project Path="src/Odysseus.Persistence/Odysseus.Persistence.csproj" />
+    <Project Path="src/Odysseus.Products/Odysseus.Products.csproj" />
+    <Project Path="src/Odysseus.Platform/Odysseus.Platform.csproj" />
+    <Project Path="src/Odysseus.Cli/Odysseus.Cli.csproj" />
+    <Project Path="src/Odysseus.Server/Odysseus.Server.csproj" />
+    <Project Path="src/Odysseus.Spec/Odysseus.Spec.csproj" />
+    <Project Path="src/Odysseus.Engine/Odysseus.Engine.csproj" />
+    <Project Path="src/Odysseus.Worker/Odysseus.Worker.csproj" />
+    <Project Path="src/Odysseus.Runner/Odysseus.Runner.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Odysseus.Application.Tests/Odysseus.Application.Tests.csproj" />
+    <Project Path="tests/Odysseus.Architecture.Tests/Odysseus.Architecture.Tests.csproj" />
+    <Project Path="tests/Odysseus.Broker.Tests/Odysseus.Broker.Tests.csproj" />
+    <Project Path="tests/Odysseus.CodeGen.Tests/Odysseus.CodeGen.Tests.csproj" />
+    <Project Path="tests/Odysseus.Compiler.Tests/Odysseus.Compiler.Tests.csproj" />
+    <Project Path="tests/Odysseus.Cli.Tests/Odysseus.Cli.Tests.csproj" />
+    <Project Path="tests/Odysseus.Domain.Tests/Odysseus.Domain.Tests.csproj" />
+    <Project Path="tests/Odysseus.EndToEnd.Tests/Odysseus.EndToEnd.Tests.csproj" />
+    <Project Path="tests/Odysseus.Evaluation.Tests/Odysseus.Evaluation.Tests.csproj" />
+    <Project Path="tests/Odysseus.Packages.Tests/Odysseus.Packages.Tests.csproj" />
+    <Project Path="tests/Odysseus.Persistence.Tests/Odysseus.Persistence.Tests.csproj" />
+    <Project Path="tests/Odysseus.Products.Tests/Odysseus.Products.Tests.csproj" />
+    <Project Path="tests/Odysseus.InstallerStub/Odysseus.InstallerStub.csproj" />
+    <Project Path="tests/Odysseus.Server.Tests/Odysseus.Server.Tests.csproj" />
+    <Project Path="tests/Odysseus.Spec.Tests/Odysseus.Spec.Tests.csproj" />
+    <Project Path="tests/Odysseus.Engine.Tests/Odysseus.Engine.Tests.csproj" />
+    <Project Path="tests/Odysseus.Worker.Tests/Odysseus.Worker.Tests.csproj" />
+    <Project Path="tests/Odysseus.WorkerStub/Odysseus.WorkerStub.csproj" />
+    <Project Path="tests/Odysseus.Runner.Tests/Odysseus.Runner.Tests.csproj" />
+    <Project Path="tests/Odysseus.RunnerStub/Odysseus.RunnerStub.csproj" />
+    <Project Path="tests/Odysseus.TestKit/Odysseus.TestKit.csproj" />
+  </Folder>
+</Solution>

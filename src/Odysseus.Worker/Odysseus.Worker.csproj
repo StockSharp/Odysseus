@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- The tests drive the emulator directly, which nothing outside this process needs to. -->
+		<InternalsVisibleTo Include="Odysseus.Worker.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Odysseus.Domain\Odysseus.Domain.csproj" />
+		<ProjectReference Include="..\Odysseus.Application\Odysseus.Application.csproj" />
+		<ProjectReference Include="..\Odysseus.Evaluation\Odysseus.Evaluation.csproj" />
+		<ProjectReference Include="..\Odysseus.Engine\Odysseus.Engine.csproj" />
+		<ProjectReference Include="..\Odysseus.Platform\Odysseus.Platform.csproj" />
+	</ItemGroup>
+
+</Project>
