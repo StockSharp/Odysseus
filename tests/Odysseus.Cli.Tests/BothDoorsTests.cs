@@ -1,14 +1,6 @@
 namespace Odysseus.Cli.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Odysseus.Application;
 using Odysseus.Broker;
@@ -198,13 +190,6 @@ public class BothDoorsTests : CliTestBase
 	}
 
 	/// <summary>
-	/// Everything under the projects root, so a command can be shown to have written nothing.
-	/// </summary>
-	/// <returns>The paths, in a stable order.</returns>
-	private IReadOnlyList<string> Files()
-		=> [.. Directory.EnumerateFiles(Root, "*", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.Ordinal)];
-
-	/// <summary>
 	/// Asserts that a type is only ever named through one of its members.
 	/// </summary>
 	/// <param name="type">The type as it is written in the source.</param>
@@ -241,4 +226,11 @@ public class BothDoorsTests : CliTestBase
 
 		return [.. files.Select(f => (f, File.ReadAllText(f)))];
 	}
+
+	/// <summary>
+	/// Everything under the projects root, so a command can be shown to have written nothing.
+	/// </summary>
+	/// <returns>The paths, in a stable order.</returns>
+	private IReadOnlyList<string> Files()
+		=> [.. Directory.EnumerateFiles(Root, "*", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.Ordinal)];
 }

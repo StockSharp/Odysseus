@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// A failure, in the shape the published error contract declares.
 /// </summary>

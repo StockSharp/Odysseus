@@ -1,9 +1,5 @@
 namespace Odysseus.Products;
 
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-
 /// <summary>
 /// Builds the command line for one invocation of the installer console.
 /// </summary>

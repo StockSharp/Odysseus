@@ -1,13 +1,6 @@
 namespace Odysseus.Persistence;
 
-using System;
-using System.IO;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 
 /// <summary>
 /// Artifact store backed by a directory tree, addressed by content hash.

@@ -1,22 +1,8 @@
 namespace Odysseus.Worker;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Ecng.Common;
 using Ecng.IO;
 
-using StockSharp.Algo;
-using StockSharp.Algo.Commissions;
-using StockSharp.Algo.Strategies;
 using StockSharp.Algo.Strategies.Optimization;
-using StockSharp.Messages;
-
-using Odysseus.Application;
-using Odysseus.Platform;
 
 /// <summary>
 /// Searches a candidate's declared numbers with the genetic optimizer StockSharp already carries.
@@ -39,6 +25,13 @@ using Odysseus.Platform;
 /// </remarks>
 internal sealed class GeneticStrategyOptimizer : IStrategyOptimizer
 {
+	/// <summary>
+	/// Below this a result is a handful of observations, and the search must not be able to win with it.
+	/// The floor lives here and nowhere else: nothing downstream refuses a thin result, it is only
+	/// reported, so a search allowed to win on two trades would hand back a setting that reads as the
+	/// best one found while resting on nothing.
+	/// </summary>
+	private const int MinimumTrades = 30;
 	private readonly int _batchSize;
 
 	/// <summary>
@@ -239,22 +232,6 @@ internal sealed class GeneticStrategyOptimizer : IStrategyOptimizer
 		return results;
 	}
 
-	// The same charge every ordinary run pays, so a setting that only works untaxed cannot win here
-	// and then fail the moment it is measured properly.
-	//
-	// The batch size is pinned rather than left at what the platform defaults it to, which is twice the
-	// processor count. Unpinned, a search runs sixty-four emulators at once on a large machine and four
-	// on a small one, so both how much memory a search needs and how long it takes would be properties of
-	// the hardware rather than of the experiment - on a product whose premise is that a measurement can
-	// be arrived at twice.
-	private void Charge(OptimizerSettings settings, ExecutionCosts costs)
-	{
-		settings.CommissionRules = [new CommissionTradeVolumeRule { Value = costs.PerUnit }];
-		settings.IncreaseDepthVolume = false;
-		settings.SpreadSize = 0;
-		settings.BatchSize = _batchSize;
-	}
-
 	/// <summary>
 	/// What the search is looking for.
 	/// </summary>
@@ -286,14 +263,6 @@ internal sealed class GeneticStrategyOptimizer : IStrategyOptimizer
 		return profit / drawdown;
 	}
 
-	/// <summary>
-	/// Below this a result is a handful of observations, and the search must not be able to win with it.
-	/// The floor lives here and nowhere else: nothing downstream refuses a thin result, it is only
-	/// reported, so a search allowed to win on two trades would hand back a setting that reads as the
-	/// best one found while resting on nothing.
-	/// </summary>
-	private const int MinimumTrades = 30;
-
 	private static OptimizationTrial Describe(Strategy strategy, IStrategyParam[] parameters)
 		=> new(
 			parameters.ToDictionary(p => p.Id, p => p.Value.To<decimal>(), StringComparer.Ordinal),
@@ -316,5 +285,21 @@ internal sealed class GeneticStrategyOptimizer : IStrategyOptimizer
 		var parameter = strategy.StatisticManager?.Parameters?.FirstOrDefault(p => p.Type == type);
 
 		return parameter?.Value is null ? 0m : parameter.Value.To<decimal>();
+	}
+
+	// The same charge every ordinary run pays, so a setting that only works untaxed cannot win here
+	// and then fail the moment it is measured properly.
+	//
+	// The batch size is pinned rather than left at what the platform defaults it to, which is twice the
+	// processor count. Unpinned, a search runs sixty-four emulators at once on a large machine and four
+	// on a small one, so both how much memory a search needs and how long it takes would be properties of
+	// the hardware rather than of the experiment - on a product whose premise is that a measurement can
+	// be arrived at twice.
+	private void Charge(OptimizerSettings settings, ExecutionCosts costs)
+	{
+		settings.CommissionRules = [new CommissionTradeVolumeRule { Value = costs.PerUnit }];
+		settings.IncreaseDepthVolume = false;
+		settings.SpreadSize = 0;
+		settings.BatchSize = _batchSize;
 	}
 }

@@ -1,12 +1,5 @@
 namespace Odysseus.Architecture.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using Odysseus.TestKit;
 
 /// <summary>
@@ -40,13 +33,13 @@ public class DependencyRulesTests : OdysseusTestBase
 		"Odysseus.Evaluation",
 	];
 
-	private static IReadOnlyDictionary<string, ProjectInfo> Source => _source ??= ProjectGraph.Load(RepositoryRoot, "src");
-
 	private static IReadOnlyDictionary<string, ProjectInfo> _source;
 
-	private static IReadOnlyDictionary<string, ProjectInfo> Tests => _tests ??= ProjectGraph.Load(RepositoryRoot, "tests");
-
 	private static IReadOnlyDictionary<string, ProjectInfo> _tests;
+
+	private static IReadOnlyDictionary<string, ProjectInfo> Source => _source ??= ProjectGraph.Load(RepositoryRoot, "src");
+
+	private static IReadOnlyDictionary<string, ProjectInfo> Tests => _tests ??= ProjectGraph.Load(RepositoryRoot, "tests");
 
 	private static IEnumerable<ProjectInfo> EveryProject => Source.Values.Concat(Tests.Values);
 

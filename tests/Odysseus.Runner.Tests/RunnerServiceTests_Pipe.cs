@@ -1,17 +1,6 @@
 namespace Odysseus.Runner.Tests;
 
-using System;
-using System.IO;
 using System.IO.Pipes;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Engine;
-using Odysseus.Runner;
 
 /// <summary>
 /// The pipe a runner answers on, and the token that is the only thing standing between it and anybody
@@ -19,7 +8,7 @@ using Odysseus.Runner;
 /// </summary>
 public partial class RunnerServiceTests
 {
-	private const string _token = "0123456789abcdef0123456789abcdef";
+	private const string Token = "0123456789abcdef0123456789abcdef";
 
 	/// <summary>A client that attaches with the token is answered, and keeps being answered.</summary>
 	[TestMethod]
@@ -28,8 +17,8 @@ public partial class RunnerServiceTests
 		await using var runner = await ListenAsync();
 		await using var client = await runner.ConnectAsync(CancellationToken);
 
-		var attached = await client.AskAsync(new("1", RunnerCommands.Attach, _token, false), CancellationToken);
-		var observed = await client.AskAsync(new("2", RunnerCommands.Observe, _token, false), CancellationToken);
+		var attached = await client.AskAsync(new("1", RunnerCommands.Attach, Token, false), CancellationToken);
+		var observed = await client.AskAsync(new("2", RunnerCommands.Observe, Token, false), CancellationToken);
 
 		IsTrue(attached.Succeeded, attached.Failure);
 		IsTrue(observed.Succeeded, observed.Failure);
@@ -45,7 +34,7 @@ public partial class RunnerServiceTests
 	/// <summary>The right token on anything but an attach is still refused: a client of ours attaches first.</summary>
 	[TestMethod]
 	public async Task AClientThatDoesNotAttachFirstIsRefused()
-		=> await RefusedAsync(new("1", RunnerCommands.Observe, _token, false));
+		=> await RefusedAsync(new("1", RunnerCommands.Observe, Token, false));
 
 	/// <summary>
 	/// A request after the attach that leaves the token out is refused too, so a connection somebody else
@@ -57,7 +46,7 @@ public partial class RunnerServiceTests
 		await using var runner = await ListenAsync();
 		await using var client = await runner.ConnectAsync(CancellationToken);
 
-		IsTrue((await client.AskAsync(new("1", RunnerCommands.Attach, _token, false), CancellationToken)).Succeeded);
+		IsTrue((await client.AskAsync(new("1", RunnerCommands.Attach, Token, false), CancellationToken)).Succeeded);
 
 		var refused = await client.AskAsync(new("2", RunnerCommands.Observe, null, false), CancellationToken);
 
@@ -87,10 +76,17 @@ public partial class RunnerServiceTests
 
 		await using var client = await runner.ConnectAsync(CancellationToken);
 
-		var observed = await client.AskAsync(new("2", RunnerCommands.Attach, _token, false), CancellationToken);
+		var observed = await client.AskAsync(new("2", RunnerCommands.Attach, Token, false), CancellationToken);
 
 		IsTrue(observed.Succeeded, observed.Failure);
 		AreNotEqual(RunnerPhases.Stopped, observed.State.Phase, "a stranger's stop was obeyed.");
+	}
+
+	private static void AssertRefused(RunnerAnswer answer)
+	{
+		IsFalse(answer.Succeeded, "a client without the token was answered.");
+		IsNull(answer.State, "a refusal described the deployment.");
+		IsNull(answer.Account, "a refusal described the account.");
 	}
 
 	private async Task RefusedAsync(RunnerRequest request)
@@ -100,13 +96,6 @@ public partial class RunnerServiceTests
 
 		AssertRefused(await client.AskAsync(request, CancellationToken));
 		IsNull(await client.NextAsync(CancellationToken), "the connection stayed open after the refusal.");
-	}
-
-	private static void AssertRefused(RunnerAnswer answer)
-	{
-		IsFalse(answer.Succeeded, "a client without the token was answered.");
-		IsNull(answer.State, "a refusal described the deployment.");
-		IsNull(answer.Account, "a refusal described the account.");
 	}
 
 	private Task<Listening> ListenAsync()

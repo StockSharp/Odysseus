@@ -1,15 +1,5 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Where a dataset is divided: by fixed shares of its range, the same for every dataset.
 /// </summary>
@@ -22,8 +12,8 @@ public class SplitTests : OdysseusTestBase
 
 	// Restated rather than read from the code under test, because a test that imports the number it is
 	// checking checks nothing.
-	private const double _development = 0.6;
-	private const double _validation = 0.2;
+	private const double Development = 0.6;
+	private const double Validation = 0.2;
 
 	/// <summary>Development takes three fifths of the range, validation one fifth, the rest is closed.</summary>
 	[TestMethod]
@@ -32,8 +22,8 @@ public class SplitTests : OdysseusTestBase
 		var split = DatasetBuilder.Build(Bars(seed: 1), _frame, "test", isSynthetic: false).Manifest.Split;
 		var span = split.To - split.From;
 
-		AreEqual(split.From + span * _development, split.DevelopmentTo);
-		AreEqual(split.From + span * (_development + _validation), split.ValidationTo);
+		AreEqual(split.From + span * Development, split.DevelopmentTo);
+		AreEqual(split.From + span * (Development + Validation), split.ValidationTo);
 	}
 
 	/// <summary>

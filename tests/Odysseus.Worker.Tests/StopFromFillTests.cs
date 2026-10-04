@@ -1,19 +1,5 @@
 namespace Odysseus.Worker.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Compiler;
-using Odysseus.Domain;
-using Odysseus.Platform;
-using Odysseus.Spec;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Where a stop is measured from: the price the position was actually bought at.
 /// </summary>
@@ -29,7 +15,7 @@ public class StopFromFillTests : OdysseusTestBase
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 0, 0, DateTimeKind.Utc);
 	private static readonly TimeSpan _timeFrame = TimeSpan.FromMinutes(5);
 
-	private const decimal _step = 0.4m;
+	private const decimal Step = 0.4m;
 
 	/// <summary>
 	/// A stop one average range below the entry fires on the first bar that closes at least one below the
@@ -50,11 +36,11 @@ public class StopFromFillTests : OdysseusTestBase
 		var delayed = (await new EmulatedBacktestRunner().RunAsync(Request(1), CancellationToken)).Trades[0];
 
 		// The setup this test depends on: one bar later on a rising price is a dearer fill.
-		AreEqual(prompt.EntryPrice + _step, delayed.EntryPrice, "the delayed entry did not fill a bar later.");
+		AreEqual(prompt.EntryPrice + Step, delayed.EntryPrice, "the delayed entry did not fill a bar later.");
 
 		// One below the price paid falls between two closes of the grid, so the stop fires on the lower one.
 		// Measured from the signal's close it would wait for the next one down.
-		AreEqual(delayed.EntryPrice - 3 * _step, delayed.ExitPrice,
+		AreEqual(delayed.EntryPrice - 3 * Step, delayed.ExitPrice,
 			"the stop fired somewhere other than one average range below the price that was paid.");
 
 		IsTrue(bars.Any(b => b.Close == delayed.ExitPrice && b.OpenTime > delayed.EntryTime),
@@ -71,7 +57,7 @@ public class StopFromFillTests : OdysseusTestBase
 		for (var i = 0; i < 120; i++)
 		{
 			var open = close;
-			var delta = i < 60 ? _step : -_step;
+			var delta = i < 60 ? Step : -Step;
 
 			close = open + delta;
 

@@ -1,18 +1,9 @@
 namespace Odysseus.Persistence.Tests;
 
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Persistence;
 using Odysseus.Platform;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Datasets over the shared market-data storage: the project keeps a description, the bars live once in
@@ -25,7 +16,7 @@ public class DatasetStoreTests : OdysseusTestBase
 
 	private static readonly TimeSpan _frame = TimeSpan.FromMinutes(5);
 
-	private const string _symbol = "AAA";
+	private const string Symbol = "AAA";
 
 	private string _root;
 	private string _bars;
@@ -105,7 +96,7 @@ public class DatasetStoreTests : OdysseusTestBase
 
 		AreEqual(before, Snapshot(_bars), "importing the same range again changed the shared storage.");
 
-		var read = await _store.LoadAsync(second, dataset.Manifest.Id, _symbol, DataSlices.Development, CancellationToken);
+		var read = await _store.LoadAsync(second, dataset.Manifest.Id, Symbol, DataSlices.Development, CancellationToken);
 
 		IsTrue(read.Count > 0, "the second project read nothing back.");
 	}
@@ -126,9 +117,9 @@ public class DatasetStoreTests : OdysseusTestBase
 		var read = new List<Candle>();
 
 		foreach (var slice in Enum.GetValues<DataSlices>())
-			read.AddRange(await _store.LoadAsync(project, dataset.Manifest.Id, _symbol, slice, CancellationToken));
+			read.AddRange(await _store.LoadAsync(project, dataset.Manifest.Id, Symbol, slice, CancellationToken));
 
-		var written = dataset.Bars[_symbol];
+		var written = dataset.Bars[Symbol];
 
 		AreEqual(written.Count, read.Count, "the three slices together are not the dataset that was saved.");
 
@@ -150,26 +141,13 @@ public class DatasetStoreTests : OdysseusTestBase
 		foreach (var slice in Enum.GetValues<DataSlices>())
 		{
 			var (from, to) = dataset.Manifest.Split.BoundsOf(slice);
-			var bars = await _store.LoadAsync(project, dataset.Manifest.Id, _symbol, slice, CancellationToken);
+			var bars = await _store.LoadAsync(project, dataset.Manifest.Id, Symbol, slice, CancellationToken);
 
 			IsTrue(bars.Count > 0, $"the {slice} slice came back empty.");
 
 			IsTrue(bars.All(b => b.OpenTime >= from && b.OpenTime < to),
 				$"the {slice} slice came back holding bars from outside {from:o}..{to:o}.");
 		}
-	}
-
-	private async Task<ImportedDataset> SaveAsync(ProjectId project)
-	{
-		var dataset = DatasetBuilder.Build(
-			new Dictionary<string, IReadOnlyList<Candle>>(StringComparer.Ordinal) { [_symbol] = [.. Generate(900)] },
-			_frame,
-			"connector:test@00000000",
-			isSynthetic: true);
-
-		await _store.SaveAsync(project, dataset, CancellationToken);
-
-		return dataset;
 	}
 
 	/// <summary>Every file of a folder with its length, so that any change to it shows up as a difference.</summary>
@@ -195,5 +173,18 @@ public class DatasetStoreTests : OdysseusTestBase
 
 			yield return new(open, price, price + 0.5m, price - 0.5m, price + 0.13m, 1_000m + i);
 		}
+	}
+
+	private async Task<ImportedDataset> SaveAsync(ProjectId project)
+	{
+		var dataset = DatasetBuilder.Build(
+			new Dictionary<string, IReadOnlyList<Candle>>(StringComparer.Ordinal) { [Symbol] = [.. Generate(900)] },
+			_frame,
+			"connector:test@00000000",
+			isSynthetic: true);
+
+		await _store.SaveAsync(project, dataset, CancellationToken);
+
+		return dataset;
 	}
 }

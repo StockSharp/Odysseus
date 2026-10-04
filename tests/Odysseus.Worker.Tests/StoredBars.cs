@@ -1,14 +1,7 @@
 namespace Odysseus.Worker.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Platform;
 
 /// <summary>
 /// Bars stored where a run can read them, the way an import stores them.

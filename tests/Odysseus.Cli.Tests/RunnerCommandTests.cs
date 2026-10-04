@@ -1,10 +1,5 @@
 namespace Odysseus.Cli.Tests;
 
-using System;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using Odysseus.Domain;
 using Odysseus.Engine;
 

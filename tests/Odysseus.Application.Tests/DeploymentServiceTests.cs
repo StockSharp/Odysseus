@@ -1,20 +1,10 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Persistence;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Putting a candidate on an account, in a process that outlives the session that started it.
@@ -31,129 +21,6 @@ using Odysseus.TestKit;
 [TestClass]
 public class DeploymentServiceTests : OdysseusTestBase
 {
-	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
-	private sealed class Builder : IStrategyBuilder
-	{
-		public BuiltStrategy Build(StrategySpec spec)
-			=> new(
-				"Generated",
-				$"// source of {spec.Name}",
-
-				// Distinct per specification, because a candidate is recognised by the source it came from
-				// and two specifications hashing the same are one candidate.
-				$"source-{spec.Name}",
-				[1, 2, 3],
-				$"assembly-{spec.Name}",
-				"1.0.0");
-	}
-
-	/// <summary>
-	/// Runners that behave however a test needs them to, without a process anywhere.
-	/// </summary>
-	/// <remarks>
-	/// Two states matter more than the rest and are easy to conflate: a runner that is gone, and one that
-	/// is alive and not answering. Only the first means nobody is holding a position, so a stand-in that
-	/// could not produce both would leave the more expensive of the two untested.
-	/// </remarks>
-	private sealed class Runners : IRunnerHost
-	{
-		private readonly Dictionary<string, RunnerHandle> _handles = new(StringComparer.Ordinal);
-
-		public RunnerLaunch Started { get; private set; }
-
-		public bool WasAskedToClose { get; private set; }
-
-		public bool WasStopped { get; private set; }
-
-		public bool Refuse { get; set; }
-
-		/// <summary>Whether the runner answers a stop by saying the stop itself failed.</summary>
-		public bool StopFails { get; set; }
-
-		/// <summary>What a runner reports about itself. Changing it is how a test makes the world move.</summary>
-		public RunnerState State { get; set; } = Trading;
-
-		/// <summary>What is found when a runner is looked for.</summary>
-		public RunnerStatuses Found { get; set; } = RunnerStatuses.Attached;
-
-		public ValueTask<RunnerHandle> LaunchAsync(RunnerLaunch launch, CancellationToken cancellationToken)
-		{
-			if (Refuse)
-				throw new RunnerStartFailedException("the runner would not start");
-
-			Started = launch;
-
-			var handle = new RunnerHandle(
-				launch.DeploymentId, launch.ProjectId, launch.CandidateId, RunnerStatuses.Attached,
-				TradingModes.Paper, 24188, "stand-in", "home", State, "Connected and answering.");
-
-			_handles[launch.DeploymentId] = handle;
-
-			return ValueTask.FromResult(handle);
-		}
-
-		public ValueTask<RunnerHandle> AttachAsync(string deploymentId, CancellationToken cancellationToken)
-			=> ValueTask.FromResult(Handle(deploymentId));
-
-		public ValueTask<RunnerHandle> StopAsync(string deploymentId, bool closePosition, CancellationToken cancellationToken)
-		{
-			if (Found == RunnerStatuses.Unresponsive)
-			{
-				throw new RunnerUnresponsiveException(
-					"Process 24188 is alive and not answering. Nothing was recorded, because recording this " +
-					"as stopped would say something untrue about an open position.");
-			}
-
-			WasStopped = true;
-			WasAskedToClose = closePosition;
-
-			if (Found == RunnerStatuses.Attached)
-			{
-				State = StopFails
-					? State with { Phase = RunnerPhases.Failed, Error = "The broker refused to cancel the working orders." }
-					: State with { IsRunning = false, Phase = RunnerPhases.Stopped };
-			}
-
-			return ValueTask.FromResult(Handle(deploymentId));
-		}
-
-		public ValueTask<PaperAccountState> AccountAsync(string deploymentId, CancellationToken cancellationToken)
-			=> throw new NotSupportedException();
-
-		public ValueTask<IReadOnlyList<RunnerHandle>> ListAsync(CancellationToken cancellationToken)
-			=> ValueTask.FromResult<IReadOnlyList<RunnerHandle>>([.. _handles.Keys.Select(Handle)]);
-
-		private RunnerHandle Handle(string deploymentId)
-			=> new(
-				deploymentId,
-				"prj",
-				"cnd",
-				Found,
-				TradingModes.Paper,
-				Found == RunnerStatuses.Unknown ? 0 : 24188,
-				"stand-in",
-				"home",
-				Found == RunnerStatuses.Attached ? State : null,
-				Found switch
-				{
-					RunnerStatuses.Gone => "There is no process 24188. It left what it held as it stood.",
-					RunnerStatuses.Unresponsive => "Process 24188 is alive and did not answer.",
-					RunnerStatuses.Unknown => "No runner was ever recorded for this deployment.",
-					_ => "Connected and answering.",
-				});
-
-		private static RunnerState Trading
-			=> new(
-				DateTime.UtcNow, RunnerPhases.Trading, TradingModes.Paper, true,
-				0, 0, 0, 0m, 0m, 0, "stand-in-account", null, null);
-	}
-
-	/// <summary>A connector that is named and never loaded, which is all a deployment needs of one.</summary>
-	private sealed class Named : IDeploymentConnector
-	{
-		public ConnectorChoice Choose() => new("StockSharp.Example", "1.2.3", string.Empty, null);
-	}
-
 	private string _root;
 	private SqliteProjectStore _store;
 	private SqliteOperationLog _operations;
@@ -462,60 +329,6 @@ public class DeploymentServiceTests : OdysseusTestBase
 	}
 
 	/// <summary>
-	/// A new service over the same storage, with the runner gone. That is what a session finds after the
-	/// process trading a deployment has ended - and it is a different finding from a runner that is alive
-	/// and not answering, which is why the stand-in is told which of the two to be.
-	/// </summary>
-	/// <param name="found">What is to be found when a runner is looked for.</param>
-	/// <returns>The service.</returns>
-	private DeploymentService Restarted(RunnerStatuses found = RunnerStatuses.Gone)
-	{
-		_runners.Found = found;
-
-		return new(_store, _store, _specs, _datasets, _artifacts, _store, _store, _runners, new Named(), _store, new SystemClock());
-	}
-
-	private async Task<(ProjectId Project, CandidateId Candidate)> ReadyAsync(
-		CandidateStatuses status = CandidateStatuses.Compiled,
-		ProjectId project = default)
-	{
-		if (project.IsEmpty)
-		{
-			var created = await _projects.CreateProjectAsync("paper", Guid.NewGuid().ToString("n"), Actors.User, CancellationToken);
-
-			project = created.Id;
-
-			await _dataset.ImportDemoAsync(project, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
-		}
-
-		var spec = await _specs.AddAsync(project, Spec(Guid.NewGuid().ToString("n")[..8]), Actors.Agent, DateTime.UtcNow, CancellationToken);
-
-		var built = await _candidates.BuildAsync(project, spec.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
-
-		// The lifecycle refuses a jump, so a candidate that is to arrive at a later stage walks there.
-		if (status != CandidateStatuses.Compiled)
-		{
-			CandidateStatuses[] road =
-			[
-				CandidateStatuses.Backtested,
-				CandidateStatuses.Validated,
-				CandidateStatuses.StressTested,
-				CandidateStatuses.FinalChecked,
-				status,
-			];
-
-			foreach (var stage in road)
-			{
-				built = built.WithStatus(stage, DateTime.UtcNow);
-
-				await _store.UpdateAsync(project, built, CancellationToken);
-			}
-		}
-
-		return (project, built.Id);
-	}
-
-	/// <summary>
 	/// Stopping a runner that is alive and not answering writes nothing down and refuses. It is the one
 	/// refusal that exists to stop a lie being recorded: nothing was stopped, nothing was closed, and the
 	/// process may still be trading, so a row saying Stopped would say something untrue about an open
@@ -611,4 +424,181 @@ public class DeploymentServiceTests : OdysseusTestBase
 		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
 		}
 		""";
+
+	/// <summary>
+	/// A new service over the same storage, with the runner gone. That is what a session finds after the
+	/// process trading a deployment has ended - and it is a different finding from a runner that is alive
+	/// and not answering, which is why the stand-in is told which of the two to be.
+	/// </summary>
+	/// <param name="found">What is to be found when a runner is looked for.</param>
+	/// <returns>The service.</returns>
+	private DeploymentService Restarted(RunnerStatuses found = RunnerStatuses.Gone)
+	{
+		_runners.Found = found;
+
+		return new(_store, _store, _specs, _datasets, _artifacts, _store, _store, _runners, new Named(), _store, new SystemClock());
+	}
+
+	private async Task<(ProjectId Project, CandidateId Candidate)> ReadyAsync(
+		CandidateStatuses status = CandidateStatuses.Compiled,
+		ProjectId project = default)
+	{
+		if (project.IsEmpty)
+		{
+			var created = await _projects.CreateProjectAsync("paper", Guid.NewGuid().ToString("n"), Actors.User, CancellationToken);
+
+			project = created.Id;
+
+			await _dataset.ImportDemoAsync(project, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
+		}
+
+		var spec = await _specs.AddAsync(project, Spec(Guid.NewGuid().ToString("n")[..8]), Actors.Agent, DateTime.UtcNow, CancellationToken);
+
+		var built = await _candidates.BuildAsync(project, spec.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
+
+		// The lifecycle refuses a jump, so a candidate that is to arrive at a later stage walks there.
+		if (status != CandidateStatuses.Compiled)
+		{
+			CandidateStatuses[] road =
+			[
+				CandidateStatuses.Backtested,
+				CandidateStatuses.Validated,
+				CandidateStatuses.StressTested,
+				CandidateStatuses.FinalChecked,
+				status,
+			];
+
+			foreach (var stage in road)
+			{
+				built = built.WithStatus(stage, DateTime.UtcNow);
+
+				await _store.UpdateAsync(project, built, CancellationToken);
+			}
+		}
+
+		return (project, built.Id);
+	}
+
+	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
+	private sealed class Builder : IStrategyBuilder
+	{
+		public BuiltStrategy Build(StrategySpec spec)
+			=> new(
+				"Generated",
+				$"// source of {spec.Name}",
+
+				// Distinct per specification, because a candidate is recognised by the source it came from
+				// and two specifications hashing the same are one candidate.
+				$"source-{spec.Name}",
+				[1, 2, 3],
+				$"assembly-{spec.Name}",
+				"1.0.0");
+	}
+
+	/// <summary>
+	/// Runners that behave however a test needs them to, without a process anywhere.
+	/// </summary>
+	/// <remarks>
+	/// Two states matter more than the rest and are easy to conflate: a runner that is gone, and one that
+	/// is alive and not answering. Only the first means nobody is holding a position, so a stand-in that
+	/// could not produce both would leave the more expensive of the two untested.
+	/// </remarks>
+	private sealed class Runners : IRunnerHost
+	{
+		private readonly Dictionary<string, RunnerHandle> _handles = new(StringComparer.Ordinal);
+
+		public RunnerLaunch Started { get; private set; }
+
+		public bool WasAskedToClose { get; private set; }
+
+		public bool WasStopped { get; private set; }
+
+		public bool Refuse { get; set; }
+
+		/// <summary>Whether the runner answers a stop by saying the stop itself failed.</summary>
+		public bool StopFails { get; set; }
+
+		/// <summary>What a runner reports about itself. Changing it is how a test makes the world move.</summary>
+		public RunnerState State { get; set; } = Trading;
+
+		/// <summary>What is found when a runner is looked for.</summary>
+		public RunnerStatuses Found { get; set; } = RunnerStatuses.Attached;
+
+		private static RunnerState Trading
+			=> new(
+				DateTime.UtcNow, RunnerPhases.Trading, TradingModes.Paper, true,
+				0, 0, 0, 0m, 0m, 0, "stand-in-account", null, null);
+
+		public ValueTask<RunnerHandle> LaunchAsync(RunnerLaunch launch, CancellationToken cancellationToken)
+		{
+			if (Refuse)
+				throw new RunnerStartFailedException("the runner would not start");
+
+			Started = launch;
+
+			var handle = new RunnerHandle(
+				launch.DeploymentId, launch.ProjectId, launch.CandidateId, RunnerStatuses.Attached,
+				TradingModes.Paper, 24188, "stand-in", "home", State, "Connected and answering.");
+
+			_handles[launch.DeploymentId] = handle;
+
+			return ValueTask.FromResult(handle);
+		}
+
+		public ValueTask<RunnerHandle> AttachAsync(string deploymentId, CancellationToken cancellationToken)
+			=> ValueTask.FromResult(Handle(deploymentId));
+
+		public ValueTask<RunnerHandle> StopAsync(string deploymentId, bool closePosition, CancellationToken cancellationToken)
+		{
+			if (Found == RunnerStatuses.Unresponsive)
+			{
+				throw new RunnerUnresponsiveException(
+					"Process 24188 is alive and not answering. Nothing was recorded, because recording this " +
+					"as stopped would say something untrue about an open position.");
+			}
+
+			WasStopped = true;
+			WasAskedToClose = closePosition;
+
+			if (Found == RunnerStatuses.Attached)
+			{
+				State = StopFails
+					? State with { Phase = RunnerPhases.Failed, Error = "The broker refused to cancel the working orders." }
+					: State with { IsRunning = false, Phase = RunnerPhases.Stopped };
+			}
+
+			return ValueTask.FromResult(Handle(deploymentId));
+		}
+
+		public ValueTask<PaperAccountState> AccountAsync(string deploymentId, CancellationToken cancellationToken)
+			=> throw new NotSupportedException();
+
+		public ValueTask<IReadOnlyList<RunnerHandle>> ListAsync(CancellationToken cancellationToken)
+			=> ValueTask.FromResult<IReadOnlyList<RunnerHandle>>([.. _handles.Keys.Select(Handle)]);
+
+		private RunnerHandle Handle(string deploymentId)
+			=> new(
+				deploymentId,
+				"prj",
+				"cnd",
+				Found,
+				TradingModes.Paper,
+				Found == RunnerStatuses.Unknown ? 0 : 24188,
+				"stand-in",
+				"home",
+				Found == RunnerStatuses.Attached ? State : null,
+				Found switch
+				{
+					RunnerStatuses.Gone => "There is no process 24188. It left what it held as it stood.",
+					RunnerStatuses.Unresponsive => "Process 24188 is alive and did not answer.",
+					RunnerStatuses.Unknown => "No runner was ever recorded for this deployment.",
+					_ => "Connected and answering.",
+				});
+	}
+
+	/// <summary>A connector that is named and never loaded, which is all a deployment needs of one.</summary>
+	private sealed class Named : IDeploymentConnector
+	{
+		public ConnectorChoice Choose() => new("StockSharp.Example", "1.2.3", string.Empty, null);
+	}
 }

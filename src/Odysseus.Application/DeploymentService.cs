@@ -1,12 +1,7 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Odysseus.Domain;
 using Odysseus.Spec;
 
 /// <summary>
@@ -491,6 +486,17 @@ public sealed class DeploymentService
 		return recorded;
 	}
 
+	private static RunResult OnClosedData(IReadOnlyList<RunResult> runs)
+		=> runs
+			.Where(r => r.Slice == DataSlices.Final && r.Status == RunStatuses.Completed)
+			.OrderByDescending(r => r.FinishedAt)
+			.FirstOrDefault();
+
+	private static IReadOnlyDictionary<string, decimal> Defaults(StrategySpec spec)
+		=> spec.Parameters.ToDictionary(p => p.Name, p => p.Default, StringComparer.Ordinal);
+
+	private static decimal Round(decimal value) => Math.Round(value, 4, MidpointRounding.AwayFromZero);
+
 	/// <summary>
 	/// Looks for the process trading a deployment, and writes down only what it said.
 	/// </summary>
@@ -573,16 +579,4 @@ public sealed class DeploymentService
 			// did nothing.
 			LastObservedAt = _clock.UtcNow,
 		};
-
-	private static RunResult OnClosedData(IReadOnlyList<RunResult> runs)
-		=> runs
-			.Where(r => r.Slice == DataSlices.Final && r.Status == RunStatuses.Completed)
-			.OrderByDescending(r => r.FinishedAt)
-			.FirstOrDefault();
-
-	private static IReadOnlyDictionary<string, decimal> Defaults(StrategySpec spec)
-		=> spec.Parameters.ToDictionary(p => p.Name, p => p.Default, StringComparer.Ordinal);
-
-
-	private static decimal Round(decimal value) => Math.Round(value, 4, MidpointRounding.AwayFromZero);
 }

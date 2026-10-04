@@ -13,7 +13,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 /// </summary>
 public abstract class OdysseusTestBase
 {
+	private static string _repositoryRoot;
 	private CancellationTokenSource _cts;
+
+	/// <summary>
+	/// Directory holding <c>Odysseus.slnx</c>, resolved by walking up from the test output directory.
+	/// </summary>
+	protected static string RepositoryRoot => _repositoryRoot ??= FindRepositoryRoot();
 
 	/// <summary>
 	/// Time a single test is allowed to run before its <see cref="CancellationToken"/> is cancelled.
@@ -24,13 +30,6 @@ public abstract class OdysseusTestBase
 	/// Token every asynchronous call inside a test must observe. Never pass <c>CancellationToken.None</c>.
 	/// </summary>
 	protected CancellationToken CancellationToken => _cts.Token;
-
-	/// <summary>
-	/// Directory holding <c>Odysseus.slnx</c>, resolved by walking up from the test output directory.
-	/// </summary>
-	protected static string RepositoryRoot => _repositoryRoot ??= FindRepositoryRoot();
-
-	private static string _repositoryRoot;
 
 	/// <summary>
 	/// Creates the per-test cancellation source.

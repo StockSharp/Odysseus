@@ -1,21 +1,11 @@
 namespace Odysseus.Worker.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using Ecng.Common;
 
 using StockSharp.Algo;
 using StockSharp.BusinessEntities;
 using StockSharp.Algo.Storages;
 using StockSharp.Messages;
-
-using Odysseus.Domain;
-using Odysseus.Platform;
-using Odysseus.TestKit;
 
 /// <summary>
 /// What a run is allowed to do to the bars it is measured over.
@@ -33,14 +23,14 @@ public class BarsAreReadOnlyForARunTests : OdysseusTestBase
 
 	private static readonly TimeSpan _frame = TimeSpan.FromMinutes(5);
 
-	private const string _symbol = "DEMO";
+	private const string Symbol = "DEMO";
 
 	/// <summary>Bars opened for a run cannot be added to.</summary>
 	[TestMethod]
 	public async Task BarsOpenedForARunCannotBeAddedTo()
 	{
-		var range = await StoredBars.WriteAsync(Bars(), _symbol, _frame, CancellationToken);
-		var securityId = EmulationSetup.SecurityIdOf(_symbol);
+		var range = await StoredBars.WriteAsync(Bars(), Symbol, _frame, CancellationToken);
+		var securityId = EmulationSetup.SecurityIdOf(Symbol);
 
 		var storage = EmulationSetup
 			.Open(range.Folder)
@@ -69,10 +59,10 @@ public class BarsAreReadOnlyForARunTests : OdysseusTestBase
 	[TestMethod]
 	public async Task BarsOpenedForARunCanStillBeRead()
 	{
-		var range = await StoredBars.WriteAsync(Bars(), _symbol, _frame, CancellationToken);
+		var range = await StoredBars.WriteAsync(Bars(), Symbol, _frame, CancellationToken);
 
 		var read = await new LocalBarStorage(range.Folder).ReadAsync(
-			_symbol, _frame, range.From, range.To, CancellationToken);
+			Symbol, _frame, range.From, range.To, CancellationToken);
 
 		AreEqual(range.Count, read.Count, "the bars a run was pointed at did not come back.");
 	}
@@ -87,8 +77,8 @@ public class BarsAreReadOnlyForARunTests : OdysseusTestBase
 	[TestMethod]
 	public void TheInstrumentARunTradesIsFiledUnderTheIdentityBarsAreWrittenWith()
 		=> AreEqual(
-			EmulationSetup.SecurityIdOf(_symbol),
-			EmulationSetup.CreateSecurity(_symbol, 0.01m).ToSecurityId());
+			EmulationSetup.SecurityIdOf(Symbol),
+			EmulationSetup.CreateSecurity(Symbol, 0.01m).ToSecurityId());
 
 	private static IReadOnlyList<Candle> Bars()
 	{

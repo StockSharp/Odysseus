@@ -1,11 +1,5 @@
 namespace Odysseus.Platform;
 
-using System;
-
-using StockSharp.Messages;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// Which market a named symbol is quoted on.
 /// </summary>
@@ -27,14 +21,6 @@ internal sealed record SymbolBoards(string Equity, string Option)
 	public static SymbolBoards Default { get; } = new(BoardCodes.Nasdaq, BoardCodes.Opra);
 
 	/// <summary>
-	/// The board a symbol belongs to.
-	/// </summary>
-	/// <param name="symbol">Symbol the caller named.</param>
-	/// <returns>The board code.</returns>
-	public string Of(string symbol)
-		=> ContractSymbol.IsContract(symbol) ? Option : Equity;
-
-	/// <summary>
 	/// The boards a connector was configured with, falling back to the American tapes.
 	/// </summary>
 	/// <param name="equity">Board for ordinary instruments, or empty.</param>
@@ -44,4 +30,12 @@ internal sealed record SymbolBoards(string Equity, string Option)
 		=> new(
 			string.IsNullOrWhiteSpace(equity) ? Default.Equity : equity.Trim(),
 			string.IsNullOrWhiteSpace(option) ? Default.Option : option.Trim());
+
+	/// <summary>
+	/// The board a symbol belongs to.
+	/// </summary>
+	/// <param name="symbol">Symbol the caller named.</param>
+	/// <returns>The board code.</returns>
+	public string Of(string symbol)
+		=> ContractSymbol.IsContract(symbol) ? Option : Equity;
 }

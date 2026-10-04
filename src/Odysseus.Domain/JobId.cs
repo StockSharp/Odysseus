@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// Identifies one long-running operation the agent polls.
 /// </summary>

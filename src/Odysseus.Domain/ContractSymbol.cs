@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// What a symbol says about itself.
 /// </summary>

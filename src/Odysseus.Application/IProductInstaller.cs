@@ -1,10 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 /// <summary>
 /// One product the StockSharp store offers.
 /// </summary>

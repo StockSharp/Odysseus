@@ -1,11 +1,5 @@
 namespace Odysseus.Compiler;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 /// <summary>
@@ -24,28 +18,28 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// </remarks>
 public static class StrategyRules
 {
-	private const string _clock = "reads the machine clock, so the same data would produce a different result tomorrow";
-	private const string _unseeded = "produces a value nobody seeded, so a re-run cannot reproduce it";
+	private const string Clock = "reads the machine clock, so the same data would produce a different result tomorrow";
+	private const string Unseeded = "produces a value nobody seeded, so a re-run cannot reproduce it";
 
 	private static readonly IReadOnlyDictionary<string, (string Rule, string Why)> _forbiddenMembers =
 		new Dictionary<string, (string, string)>(StringComparer.Ordinal)
 		{
-			["System.DateTime.Now"] = ("ODSTR012", _clock),
-			["System.DateTime.UtcNow"] = ("ODSTR012", _clock),
-			["System.DateTime.Today"] = ("ODSTR012", _clock),
-			["System.DateTimeOffset.Now"] = ("ODSTR012", _clock),
-			["System.DateTimeOffset.UtcNow"] = ("ODSTR012", _clock),
-			["System.Guid.NewGuid"] = ("ODSTR013", _unseeded),
-			["System.Guid.CreateVersion7"] = ("ODSTR013", _unseeded),
+			["System.DateTime.Now"] = ("ODSTR012", Clock),
+			["System.DateTime.UtcNow"] = ("ODSTR012", Clock),
+			["System.DateTime.Today"] = ("ODSTR012", Clock),
+			["System.DateTimeOffset.Now"] = ("ODSTR012", Clock),
+			["System.DateTimeOffset.UtcNow"] = ("ODSTR012", Clock),
+			["System.Guid.NewGuid"] = ("ODSTR013", Unseeded),
+			["System.Guid.CreateVersion7"] = ("ODSTR013", Unseeded),
 
 			// A string's hash is seeded afresh in every process, so anything decided by one is decided
 			// differently on the next run.
-			["System.String.GetHashCode"] = ("ODSTR013", _unseeded),
+			["System.String.GetHashCode"] = ("ODSTR013", Unseeded),
 
-			["Ecng.Common.TimeHelper.Now"] = ("ODSTR012", _clock),
-			["Ecng.Common.TimeHelper.NowWithOffset"] = ("ODSTR012", _clock),
-			["Ecng.Common.TimeHelper.UtcNow"] = ("ODSTR012", _clock),
-			["Ecng.Common.TimeHelper.Today"] = ("ODSTR012", _clock),
+			["Ecng.Common.TimeHelper.Now"] = ("ODSTR012", Clock),
+			["Ecng.Common.TimeHelper.NowWithOffset"] = ("ODSTR012", Clock),
+			["Ecng.Common.TimeHelper.UtcNow"] = ("ODSTR012", Clock),
+			["Ecng.Common.TimeHelper.Today"] = ("ODSTR012", Clock),
 		};
 
 	// Whole areas that put a run at the mercy of something outside the data. They cannot be excluded by

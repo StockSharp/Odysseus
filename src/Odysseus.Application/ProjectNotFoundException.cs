@@ -1,9 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// Thrown when a project that was asked for does not exist.
 /// </summary>

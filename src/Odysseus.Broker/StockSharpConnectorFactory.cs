@@ -1,17 +1,10 @@
 namespace Odysseus.Broker;
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Ecng.Common;
-
-using StockSharp.Messages;
-
-using Odysseus.Application;
 using Odysseus.Packages;
 using Odysseus.Platform;
 
@@ -84,6 +77,21 @@ public sealed class StockSharpConnectorFactory : IConnectorFactory
 	}
 
 	/// <summary>
+	/// Which account this factory's connectors may reach, as the process was configured at start-up.
+	/// </summary>
+	/// <remarks>
+	/// Exposed so that a runner can report its own mode without asking anything that could answer
+	/// differently. It is read-only on purpose: there is no setter and no call that takes one.
+	/// </remarks>
+	public TradingMandate Mandate => _mandate;
+
+	/// <inheritdoc />
+	public IReadOnlyList<string> Allowed { get; }
+
+	/// <inheritdoc />
+	public IReadOnlyList<string> Sources { get; }
+
+	/// <summary>
 	/// Builds the factory a host uses.
 	/// </summary>
 	/// <param name="cacheRoot">Directory downloaded connectors are kept in.</param>
@@ -122,21 +130,6 @@ public sealed class StockSharpConnectorFactory : IConnectorFactory
 
 		return new(fetcher, HostPackages.Read(AppContext.BaseDirectory), credentials, allowed, named, mandate);
 	}
-
-	/// <summary>
-	/// Which account this factory's connectors may reach, as the process was configured at start-up.
-	/// </summary>
-	/// <remarks>
-	/// Exposed so that a runner can report its own mode without asking anything that could answer
-	/// differently. It is read-only on purpose: there is no setter and no call that takes one.
-	/// </remarks>
-	public TradingMandate Mandate => _mandate;
-
-	/// <inheritdoc />
-	public IReadOnlyList<string> Allowed { get; }
-
-	/// <inheritdoc />
-	public IReadOnlyList<string> Sources { get; }
 
 	/// <inheritdoc />
 	public async ValueTask<ConnectorDescription> InspectAsync(ConnectorChoice choice, CancellationToken cancellationToken)
@@ -222,6 +215,57 @@ public sealed class StockSharpConnectorFactory : IConnectorFactory
 		return ValueTask.FromResult<IReadOnlyList<ConnectorDescription>>(found);
 	}
 
+	/// <summary>
+	/// What a connector turns out to be. One instance of the adapter is built and thrown away, because
+	/// two of the answers - which markets it is for and whether it says a configuration file is enough
+	/// for it - are instance properties, and reporting a guess for them would be worse than the cost of
+	/// a constructor that reads three attributes.
+	/// </summary>
+	private static ConnectorDescription Describe(
+		FetchedPackage package,
+		Type adapter,
+		IReadOnlyDictionary<string, string> settings)
+	{
+		using var probe = AdapterCatalog.Create(adapter, new IncrementalIdGenerator());
+
+		return new(
+			package.Id,
+			package.Version,
+			package.Sha256,
+			adapter.FullName,
+			adapter.Name,
+			Categories(probe.Categories),
+			AdapterConfigurator.CredentialShapeOf(adapter),
+			probe is IDemoAdapter,
+			probe.ExtraSetup,
+			AdapterConfigurator.Describe(adapter),
+			ConnectorChoice.SourceNameOf(package.Id, settings));
+	}
+
+	private static IReadOnlyList<string> Categories(MessageAdapterCategories categories)
+	{
+		if (categories == default)
+			return [];
+
+		return categories.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+	}
+
+	private static IReadOnlyDictionary<string, string> Settings(ConnectorChoice choice)
+	{
+		var settings = new Dictionary<string, string>(StringComparer.Ordinal);
+
+		foreach (var (name, value) in choice.Settings ?? new Dictionary<string, string>())
+		{
+			if (!ConnectorChoice.ReservedSettings.Contains(name, StringComparer.Ordinal))
+				settings[name] = value;
+		}
+
+		return settings;
+	}
+
+	private static string Reserved(ConnectorChoice choice, string name)
+		=> choice.Settings is not null && choice.Settings.TryGetValue(name, out var value) ? value : string.Empty;
+
 	private async ValueTask<(ConnectorDescription Description, Type Adapter)> LoadAsync(
 		ConnectorChoice choice,
 		CancellationToken cancellationToken)
@@ -303,57 +347,6 @@ public sealed class StockSharpConnectorFactory : IConnectorFactory
 
 		return context.LoadFromAssemblyPath(path);
 	}
-
-	/// <summary>
-	/// What a connector turns out to be. One instance of the adapter is built and thrown away, because
-	/// two of the answers - which markets it is for and whether it says a configuration file is enough
-	/// for it - are instance properties, and reporting a guess for them would be worse than the cost of
-	/// a constructor that reads three attributes.
-	/// </summary>
-	private static ConnectorDescription Describe(
-		FetchedPackage package,
-		Type adapter,
-		IReadOnlyDictionary<string, string> settings)
-	{
-		using var probe = AdapterCatalog.Create(adapter, new IncrementalIdGenerator());
-
-		return new(
-			package.Id,
-			package.Version,
-			package.Sha256,
-			adapter.FullName,
-			adapter.Name,
-			Categories(probe.Categories),
-			AdapterConfigurator.CredentialShapeOf(adapter),
-			probe is IDemoAdapter,
-			probe.ExtraSetup,
-			AdapterConfigurator.Describe(adapter),
-			ConnectorChoice.SourceNameOf(package.Id, settings));
-	}
-
-	private static IReadOnlyList<string> Categories(MessageAdapterCategories categories)
-	{
-		if (categories == default)
-			return [];
-
-		return categories.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-	}
-
-	private static IReadOnlyDictionary<string, string> Settings(ConnectorChoice choice)
-	{
-		var settings = new Dictionary<string, string>(StringComparer.Ordinal);
-
-		foreach (var (name, value) in choice.Settings ?? new Dictionary<string, string>())
-		{
-			if (!ConnectorChoice.ReservedSettings.Contains(name, StringComparer.Ordinal))
-				settings[name] = value;
-		}
-
-		return settings;
-	}
-
-	private static string Reserved(ConnectorChoice choice, string name)
-		=> choice.Settings is not null && choice.Settings.TryGetValue(name, out var value) ? value : string.Empty;
 
 	private Type Resolve(string name)
 	{

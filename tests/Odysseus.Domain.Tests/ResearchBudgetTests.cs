@@ -1,12 +1,5 @@
 namespace Odysseus.Domain.Tests;
 
-using System;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.TestKit;
-
 /// <summary>
 /// The research budget: what a project was granted, and what the figures say is left of it.
 /// </summary>

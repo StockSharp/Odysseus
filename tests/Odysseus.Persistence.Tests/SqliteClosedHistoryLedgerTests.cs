@@ -1,16 +1,5 @@
 namespace Odysseus.Persistence.Tests;
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.Persistence;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Remembering which closed history has been spent.
 /// </summary>

@@ -6,10 +6,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\Odysseus.TestKit\Odysseus.TestKit.csproj" />
 	</ItemGroup>
 

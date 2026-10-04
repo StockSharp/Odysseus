@@ -1,10 +1,6 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
+using System.Linq;
 
 /// <summary>
 /// Importing data and telling an agent what it may know about it.

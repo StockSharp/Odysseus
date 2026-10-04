@@ -1,15 +1,6 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The four broker ports before, during and after a connector is chosen.
@@ -23,6 +14,8 @@ using Odysseus.TestKit;
 [TestClass]
 public class BrokerGatewayTests : OdysseusTestBase
 {
+	private static DateTime Utc => new(2026, 3, 2, 14, 0, 0, DateTimeKind.Utc);
+
 	/// <summary>
 	/// Nothing chosen refuses with the same exception the stand-in threw, naming what was being attempted
 	/// - so every refusal an agent has ever been able to act on still reads the same way.
@@ -146,8 +139,6 @@ public class BrokerGatewayTests : OdysseusTestBase
 
 		AreEqual(gateway.Choose(), gateway.CurrentChoice);
 	}
-
-	private static DateTime Utc => new(2026, 3, 2, 14, 0, 0, DateTimeKind.Utc);
 
 	private static ConnectorChoice Choice(string packageId)
 		=> new(packageId, "1.0.0", string.Empty, new Dictionary<string, string>(StringComparer.Ordinal));

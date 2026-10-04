@@ -1,15 +1,9 @@
 namespace Odysseus.Broker.Tests;
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
 using Ecng.Common;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Configuring a connector nobody compiled against.

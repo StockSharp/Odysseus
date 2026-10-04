@@ -1,16 +1,5 @@
 namespace Odysseus.Spec.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Spec;
-using Odysseus.TestKit;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// Checking a specification before anything is generated from it.
 /// </summary>

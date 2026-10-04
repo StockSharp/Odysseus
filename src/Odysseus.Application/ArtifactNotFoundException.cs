@@ -1,9 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// Thrown when an artifact the project refers to is not in the store.
 /// </summary>

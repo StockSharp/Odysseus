@@ -1,15 +1,8 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.TestKit;
+using Odysseus.Spec;
 
 /// <summary>
 /// What an agent is told when a call fails.
@@ -60,8 +53,8 @@ public class ToolErrorTests : OdysseusTestBase
 		var described = ToolErrors.Describe(
 			new InvalidSpecException(
 			[
-				new Odysseus.Spec.SpecProblem("entries.e1.condition", "refers to 'Undeclared'", "declare it"),
-				new Odysseus.Spec.SpecProblem("exits", "never closes a position", "add an exit"),
+				new SpecProblem("entries.e1.condition", "refers to 'Undeclared'", "declare it"),
+				new SpecProblem("exits", "never closes a position", "add an exit"),
 			]),
 			Correlation);
 
@@ -254,7 +247,7 @@ public class ToolErrorTests : OdysseusTestBase
 			new DeploymentNotFoundException(DeploymentId.New()),
 			new ArtifactNotFoundException(ArtifactId.FromContent("x"u8)),
 			new ArtifactCorruptedException(ArtifactId.FromContent("x"u8), "deadbeef"),
-			new InvalidSpecException([new Odysseus.Spec.SpecProblem("where", "what", "fix")]),
+			new InvalidSpecException([new SpecProblem("where", "what", "fix")]),
 			new ResearchBudgetExhaustedException("spent"),
 			new StrategyBuildException([new BuildProblem("CS0103", "no such name", 3)]),
 			new BrokerNotConfiguredException("Downloading history"),

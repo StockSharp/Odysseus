@@ -1,8 +1,5 @@
 namespace Odysseus.Engine;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 
 /// <summary>
@@ -47,6 +44,9 @@ public sealed record RunnerOptions(
 	/// </remarks>
 	public const string RunnerFolder = "runner";
 
+	private static string Extension
+		=> RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
+
 	/// <summary>The options a host starts with, with the runner looked for beside it.</summary>
 	/// <returns>The options.</returns>
 	public static RunnerOptions Read()
@@ -78,7 +78,4 @@ public sealed record RunnerOptions(
 		// A framework-dependent build without an apphost, which is what a container image often carries.
 		return Path.Combine(folder, RunnerName + ".dll");
 	}
-
-	private static string Extension
-		=> RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
 }

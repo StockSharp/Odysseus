@@ -1,14 +1,5 @@
 namespace Odysseus.Server;
 
-using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
-
-using ModelContextProtocol.Server;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-
 /// <summary>
 /// The tool that measures a candidate, and the one that reads the measurement back.
 /// </summary>

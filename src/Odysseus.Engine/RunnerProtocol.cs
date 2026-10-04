@@ -1,8 +1,5 @@
 namespace Odysseus.Engine;
 
-using System;
-
-using Odysseus.Application;
 using Odysseus.Domain;
 
 /// <summary>What a runner was asked to do.</summary>

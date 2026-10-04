@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// The account value at one moment of a run.
 /// </summary>

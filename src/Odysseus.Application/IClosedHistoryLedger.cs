@@ -1,12 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// Remembers which stretches of closed history have been spent, across every project on this machine.
 /// </summary>

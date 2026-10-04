@@ -1,16 +1,6 @@
 namespace Odysseus.CodeGen.Tests;
 
-using System;
 using System.IO;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.CodeGen;
-using Odysseus.Spec;
-using Odysseus.TestKit;
-
-using Odysseus.Domain;
 
 /// <summary>
 /// Keeps a copy of what the translator produces, so that a change to it shows up as a change to a file.

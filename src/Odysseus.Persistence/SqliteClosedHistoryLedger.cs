@@ -1,17 +1,8 @@
 namespace Odysseus.Persistence;
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 using Microsoft.Data.Sqlite;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 
 /// <summary>
 /// Remembers spent closed history in a database next to the projects.
@@ -146,6 +137,12 @@ public sealed class SqliteClosedHistoryLedger : IClosedHistoryLedger, IDisposabl
 		_gate.Dispose();
 	}
 
+	private static string Format(DateTime moment)
+		=> moment.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+
+	private static DateTime Parse(string text)
+		=> DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).ToUniversalTime();
+
 	private async ValueTask<IReadOnlyList<SpentWindow>> OverlappingAsync(
 		SqliteTransaction transaction,
 		string symbol,
@@ -190,10 +187,4 @@ public sealed class SqliteClosedHistoryLedger : IClosedHistoryLedger, IDisposabl
 
 		return spent;
 	}
-
-	private static string Format(DateTime moment)
-		=> moment.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
-
-	private static DateTime Parse(string text)
-		=> DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).ToUniversalTime();
 }

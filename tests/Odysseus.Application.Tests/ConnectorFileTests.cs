@@ -1,12 +1,5 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.TestKit;
-
 /// <summary>
 /// The small file that says which broker a server was started pointed at.
 /// </summary>

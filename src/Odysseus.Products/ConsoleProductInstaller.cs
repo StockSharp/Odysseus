@@ -1,11 +1,7 @@
 namespace Odysseus.Products;
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -143,6 +139,76 @@ public sealed class ConsoleProductInstaller : IProductInstaller, IDisposable
 	/// <summary>Releases the gate that serialises invocations.</summary>
 	public void Dispose()
 		=> _gate.Dispose();
+
+	/// <summary>
+	/// Reads a pipe to its end, and answers with what arrived rather than raising.
+	/// </summary>
+	/// <param name="reader">Pipe to read.</param>
+	/// <returns>What was read, or an empty string when the pipe broke.</returns>
+	/// <remarks>
+	/// A pipe whose far end was killed mid-write is not a failure of the call: what the program managed
+	/// to say before it was stopped is exactly what the caller needs to read.
+	/// </remarks>
+	private static async Task<string> DrainAsync(TextReader reader)
+	{
+		try
+		{
+			return await reader.ReadToEndAsync(CancellationToken.None);
+		}
+		catch (Exception error) when (error is not OperationCanceledException)
+		{
+			return string.Empty;
+		}
+	}
+
+	/// <summary>
+	/// Waits for both pipes, without waiting for them for ever.
+	/// </summary>
+	/// <param name="output">Standard output being read.</param>
+	/// <param name="errors">Standard error being read.</param>
+	/// <returns>Everything that arrived.</returns>
+	/// <remarks>
+	/// After a kill both reads end, because the handles close with the process tree. The bound is for
+	/// the case where something outside that tree inherited a handle: the answer is then short rather
+	/// than never.
+	/// </remarks>
+	private static async Task<string> ReadAsync(Task<string> output, Task<string> errors)
+	{
+		await Task.WhenAny(Task.WhenAll(output, errors), Task.Delay(TimeSpan.FromSeconds(5)));
+
+		var text = output.IsCompletedSuccessfully ? output.Result : string.Empty;
+		var failures = errors.IsCompletedSuccessfully ? errors.Result : string.Empty;
+
+		return string.IsNullOrWhiteSpace(failures) ? text : text + Environment.NewLine + failures;
+	}
+
+	private static void Kill(Process process)
+	{
+		try
+		{
+			if (!process.HasExited)
+				process.Kill(entireProcessTree: true);
+
+			process.WaitForExit(5000);
+		}
+		catch (Exception error) when (error is not OperationCanceledException)
+		{
+			// It exited between the two calls, or the platform would not let go of it. Either way there
+			// is nothing further to do, and the deadline is reported whatever the kill came to.
+		}
+	}
+
+	private static string Describe(TimeSpan deadline)
+		=> deadline.TotalMinutes >= 1
+			? deadline.TotalMinutes.ToString("0.#", CultureInfo.InvariantCulture) + " minutes"
+			: deadline.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture) + " seconds";
+
+	private static string Join(IEnumerable<string> values)
+	{
+		var joined = values is null ? string.Empty : string.Join(", ", values);
+
+		return joined.Length == 0 ? "nowhere" : joined;
+	}
 
 	/// <summary>
 	/// Refuses everything the operator has not arranged, then runs the console and reads what it said.
@@ -405,48 +471,6 @@ public sealed class ConsoleProductInstaller : IProductInstaller, IDisposable
 	}
 
 	/// <summary>
-	/// Reads a pipe to its end, and answers with what arrived rather than raising.
-	/// </summary>
-	/// <param name="reader">Pipe to read.</param>
-	/// <returns>What was read, or an empty string when the pipe broke.</returns>
-	/// <remarks>
-	/// A pipe whose far end was killed mid-write is not a failure of the call: what the program managed
-	/// to say before it was stopped is exactly what the caller needs to read.
-	/// </remarks>
-	private static async Task<string> DrainAsync(TextReader reader)
-	{
-		try
-		{
-			return await reader.ReadToEndAsync(CancellationToken.None);
-		}
-		catch (Exception error) when (error is not OperationCanceledException)
-		{
-			return string.Empty;
-		}
-	}
-
-	/// <summary>
-	/// Waits for both pipes, without waiting for them for ever.
-	/// </summary>
-	/// <param name="output">Standard output being read.</param>
-	/// <param name="errors">Standard error being read.</param>
-	/// <returns>Everything that arrived.</returns>
-	/// <remarks>
-	/// After a kill both reads end, because the handles close with the process tree. The bound is for
-	/// the case where something outside that tree inherited a handle: the answer is then short rather
-	/// than never.
-	/// </remarks>
-	private static async Task<string> ReadAsync(Task<string> output, Task<string> errors)
-	{
-		await Task.WhenAny(Task.WhenAll(output, errors), Task.Delay(TimeSpan.FromSeconds(5)));
-
-		var text = output.IsCompletedSuccessfully ? output.Result : string.Empty;
-		var failures = errors.IsCompletedSuccessfully ? errors.Result : string.Empty;
-
-		return string.IsNullOrWhiteSpace(failures) ? text : text + Environment.NewLine + failures;
-	}
-
-	/// <summary>
 	/// Writes the whole of an invocation down.
 	/// </summary>
 	/// <param name="console">Path of the console.</param>
@@ -498,34 +522,6 @@ public sealed class ConsoleProductInstaller : IProductInstaller, IDisposable
 			// The capture is a convenience; losing it must not lose the outcome as well.
 			return string.Empty;
 		}
-	}
-
-	private static void Kill(Process process)
-	{
-		try
-		{
-			if (!process.HasExited)
-				process.Kill(entireProcessTree: true);
-
-			process.WaitForExit(5000);
-		}
-		catch (Exception error) when (error is not OperationCanceledException)
-		{
-			// It exited between the two calls, or the platform would not let go of it. Either way there
-			// is nothing further to do, and the deadline is reported whatever the kill came to.
-		}
-	}
-
-	private static string Describe(TimeSpan deadline)
-		=> deadline.TotalMinutes >= 1
-			? deadline.TotalMinutes.ToString("0.#", CultureInfo.InvariantCulture) + " minutes"
-			: deadline.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture) + " seconds";
-
-	private static string Join(IEnumerable<string> values)
-	{
-		var joined = values is null ? string.Empty : string.Join(", ", values);
-
-		return joined.Length == 0 ? "nowhere" : joined;
 	}
 
 	/// <summary>What one run of the console printed, and what became of it.</summary>

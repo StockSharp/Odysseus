@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// A remote StockSharp storage server to import history from instead of a broker.
 /// </summary>

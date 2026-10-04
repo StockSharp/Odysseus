@@ -1,17 +1,7 @@
 namespace Odysseus.Server;
 
-using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-using ModelContextProtocol.Server;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 
 /// <summary>
 /// The tools that run a candidate and say what it did.
@@ -246,6 +236,28 @@ public static class BacktestTools
 			};
 		});
 
+	internal static IReadOnlyDictionary<string, decimal> ParseParameters(string value)
+	{
+		var parsed = new Dictionary<string, decimal>(StringComparer.Ordinal);
+
+		foreach (var pair in (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+		{
+			var parts = pair.Split('=', 2, StringSplitOptions.TrimEntries);
+
+			if (parts.Length != 2 || !decimal.TryParse(parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out var number))
+			{
+				throw new ArgumentException(
+					$"'{pair}' is not a parameter setting. Write them as 'Name=Value', separated by commas, " +
+					"for example 'BreakoutPeriod=30,AtrMultiplier=2.5'.",
+					nameof(value));
+			}
+
+			parsed[parts[0]] = number;
+		}
+
+		return parsed;
+	}
+
 	private static object Describe(RunResult run, bool wasAlreadyRun, IReadOnlyList<string> untouched = null)
 	{
 		if (run.Status != RunStatuses.Completed)
@@ -343,27 +355,5 @@ public static class BacktestTools
 			: throw new ArgumentException(
 				$"'{value}' is not a part of the history. Use 'development' or 'validation'.",
 				nameof(value));
-	}
-
-	internal static IReadOnlyDictionary<string, decimal> ParseParameters(string value)
-	{
-		var parsed = new Dictionary<string, decimal>(StringComparer.Ordinal);
-
-		foreach (var pair in (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-		{
-			var parts = pair.Split('=', 2, StringSplitOptions.TrimEntries);
-
-			if (parts.Length != 2 || !decimal.TryParse(parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out var number))
-			{
-				throw new ArgumentException(
-					$"'{pair}' is not a parameter setting. Write them as 'Name=Value', separated by commas, " +
-					"for example 'BreakoutPeriod=30,AtrMultiplier=2.5'.",
-					nameof(value));
-			}
-
-			parsed[parts[0]] = number;
-		}
-
-		return parsed;
 	}
 }

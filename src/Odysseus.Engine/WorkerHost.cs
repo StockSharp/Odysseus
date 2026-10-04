@@ -1,14 +1,8 @@
 namespace Odysseus.Engine;
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
-
-using Odysseus.Application;
 
 /// <summary>
 /// The worker process, seen from the server.
@@ -52,6 +46,47 @@ public sealed class WorkerHost : IDisposable
 	{
 		_options = options ?? throw new ArgumentNullException(nameof(options));
 		_expectedEngine = expectedEngine ?? string.Empty;
+	}
+
+	/// <summary>
+	/// How the worker is launched, and what it is deliberately not told.
+	/// </summary>
+	/// <param name="options">Where the worker is.</param>
+	/// <returns>The start information, ready to be started.</returns>
+	/// <remarks>
+	/// An executable is run directly; an assembly without one is run by the runtime host, which is what a
+	/// framework-dependent deployment carries. Public because what is removed from the environment here is
+	/// a guarantee rather than a detail, and a guarantee that cannot be asserted is a hope.
+	/// </remarks>
+	public static ProcessStartInfo Describe(WorkerOptions options)
+	{
+		ArgumentNullException.ThrowIfNull(options);
+
+		var runtimeHosted = options.WorkerPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
+
+		var info = new ProcessStartInfo(runtimeHosted ? "dotnet" : options.WorkerPath)
+		{
+			RedirectStandardInput = true,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+			WorkingDirectory = Path.GetDirectoryName(options.WorkerPath) ?? AppContext.BaseDirectory,
+		};
+
+		if (runtimeHosted)
+			info.ArgumentList.Add(options.WorkerPath);
+
+		foreach (var argument in options.Arguments ?? Array.Empty<string>())
+			info.ArgumentList.Add(argument);
+
+		// The reason the credentials are a path rather than a value: a value in the environment is
+		// inherited by every process the server starts, and this is one of them. The worker is given the
+		// bars of a slice as data, and never a place it could go and read more of them from.
+		info.Environment.Remove("ODYSSEUS_BROKER_KEYS");
+		info.Environment.Remove("ODYSSEUS_BROKER_CONNECTOR");
+		info.Environment.Remove("ODYSSEUS_PROJECTS_ROOT");
+
+		return info;
 	}
 
 	/// <summary>
@@ -132,6 +167,12 @@ public sealed class WorkerHost : IDisposable
 		Retire();
 		_gate.Dispose();
 	}
+
+	private static string Quoted(string id)
+		=> string.IsNullOrEmpty(id) ? "'(none)'" : $"'{id}'";
+
+	private static string NewId()
+		=> Guid.NewGuid().ToString("n")[..12];
 
 	private async Task<WorkerAnswer> CallAsync(
 		WorkerRequest request,
@@ -310,47 +351,6 @@ public sealed class WorkerHost : IDisposable
 		return answer;
 	}
 
-	/// <summary>
-	/// How the worker is launched, and what it is deliberately not told.
-	/// </summary>
-	/// <param name="options">Where the worker is.</param>
-	/// <returns>The start information, ready to be started.</returns>
-	/// <remarks>
-	/// An executable is run directly; an assembly without one is run by the runtime host, which is what a
-	/// framework-dependent deployment carries. Public because what is removed from the environment here is
-	/// a guarantee rather than a detail, and a guarantee that cannot be asserted is a hope.
-	/// </remarks>
-	public static ProcessStartInfo Describe(WorkerOptions options)
-	{
-		ArgumentNullException.ThrowIfNull(options);
-
-		var runtimeHosted = options.WorkerPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
-
-		var info = new ProcessStartInfo(runtimeHosted ? "dotnet" : options.WorkerPath)
-		{
-			RedirectStandardInput = true,
-			RedirectStandardOutput = true,
-			RedirectStandardError = true,
-			UseShellExecute = false,
-			WorkingDirectory = Path.GetDirectoryName(options.WorkerPath) ?? AppContext.BaseDirectory,
-		};
-
-		if (runtimeHosted)
-			info.ArgumentList.Add(options.WorkerPath);
-
-		foreach (var argument in options.Arguments ?? Array.Empty<string>())
-			info.ArgumentList.Add(argument);
-
-		// The reason the credentials are a path rather than a value: a value in the environment is
-		// inherited by every process the server starts, and this is one of them. The worker is given the
-		// bars of a slice as data, and never a place it could go and read more of them from.
-		info.Environment.Remove("ODYSSEUS_BROKER_KEYS");
-		info.Environment.Remove("ODYSSEUS_BROKER_CONNECTOR");
-		info.Environment.Remove("ODYSSEUS_PROJECTS_ROOT");
-
-		return info;
-	}
-
 	private IsolationFailedException Describe(IsolationFailures breach, TimeSpan deadline)
 	{
 		if (breach == IsolationFailures.Memory)
@@ -372,12 +372,6 @@ public sealed class WorkerHost : IDisposable
 		_worker?.Dispose();
 		_worker = null;
 	}
-
-	private static string Quoted(string id)
-		=> string.IsNullOrEmpty(id) ? "'(none)'" : $"'{id}'";
-
-	private static string NewId()
-		=> Guid.NewGuid().ToString("n")[..12];
 
 	/// <summary>
 	/// Kills the worker when it overruns its deadline or its memory, and remembers which of the two it

@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// Which part of the machinery around a candidate failed.
 /// </summary>

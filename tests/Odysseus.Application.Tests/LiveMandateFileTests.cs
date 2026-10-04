@@ -1,14 +1,5 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.IO;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.TestKit;
-
 /// <summary>
 /// The one file that permits real money, and the one reader of it.
 /// </summary>
@@ -29,6 +20,23 @@ public class LiveMandateFileTests : OdysseusTestBase
 	private static readonly DateTime _now = new(2026, 9, 4, 12, 0, 0, DateTimeKind.Utc);
 
 	private string _directory;
+
+	private static string Valid =>
+		"""
+		{
+		  "schema": 1,
+		  "phrase": "trade real money on U1234567 until the thirtieth",
+		  "account": "U1234567",
+		  "connector": {
+		    "packageId": "StockSharp.Example",
+		    "packageVersion": "1.2.3",
+		    "adapter": "StockSharp.Example.ExampleMessageAdapter"
+		  },
+		  "symbols": ["AAPL"],
+		  "maxPositionNotional": 5000,
+		  "expiresAt": "2026-09-30T00:00:00Z"
+		}
+		""";
 
 	/// <summary>Makes a directory of its own.</summary>
 	[TestInitialize]
@@ -203,6 +211,10 @@ public class LiveMandateFileTests : OdysseusTestBase
 		IsTrue(TradingMandate.Paper.Allows("anything at all"));
 	}
 
+	private static string Without(string field)
+		=> Valid
+			.Replace($"\"{field}\":", $"\"not-{field}\":", StringComparison.Ordinal);
+
 	private string Write(string content)
 	{
 		var path = Path.Combine(_directory, $"{Guid.NewGuid():n}.json");
@@ -211,25 +223,4 @@ public class LiveMandateFileTests : OdysseusTestBase
 
 		return path;
 	}
-
-	private static string Without(string field)
-		=> Valid
-			.Replace($"\"{field}\":", $"\"not-{field}\":", StringComparison.Ordinal);
-
-	private static string Valid =>
-		"""
-		{
-		  "schema": 1,
-		  "phrase": "trade real money on U1234567 until the thirtieth",
-		  "account": "U1234567",
-		  "connector": {
-		    "packageId": "StockSharp.Example",
-		    "packageVersion": "1.2.3",
-		    "adapter": "StockSharp.Example.ExampleMessageAdapter"
-		  },
-		  "symbols": ["AAPL"],
-		  "maxPositionNotional": 5000,
-		  "expiresAt": "2026-09-30T00:00:00Z"
-		}
-		""";
 }

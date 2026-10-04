@@ -1,14 +1,5 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Cutting a slice into the consecutive stretches walk-forward measures apart.
 /// </summary>

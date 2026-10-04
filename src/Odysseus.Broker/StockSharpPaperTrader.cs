@@ -1,19 +1,13 @@
 namespace Odysseus.Broker;
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Ecng.Common;
-
 using StockSharp.Algo;
 using StockSharp.Algo.Strategies;
 using StockSharp.BusinessEntities;
-using StockSharp.Messages;
 
-using Odysseus.Application;
 using Odysseus.Domain;
 using Odysseus.Evaluation;
 using Odysseus.Platform;
@@ -35,13 +29,12 @@ using Odysseus.Platform;
 /// </remarks>
 internal sealed class StockSharpPaperTrader : IPaperTrader, IPaperAccount
 {
-	private readonly IAdapterSource _adapters;
-
 	/// <summary>How long the venue is given to answer before starting is given up on.</summary>
 	private static readonly TimeSpan _patience = TimeSpan.FromMinutes(2);
 
 	/// <summary>How long a reading waits for the holdings that follow the account.</summary>
 	private static readonly TimeSpan _settle = TimeSpan.FromSeconds(3);
+	private readonly IAdapterSource _adapters;
 
 	/// <summary>
 	/// Creates the trader.
@@ -187,23 +180,6 @@ internal sealed class StockSharpPaperTrader : IPaperTrader, IPaperAccount
 			_ => time.ToUniversalTime(),
 		};
 
-	private Connector Open()
-	{
-		var connector = new Connector();
-
-		try
-		{
-			connector.Adapter.InnerAdapters.Add(_adapters.Create(connector.TransactionIdGenerator));
-		}
-		catch
-		{
-			connector.Dispose();
-			throw;
-		}
-
-		return connector;
-	}
-
 	/// <summary>
 	/// Waits until the strategy is really running.
 	/// </summary>
@@ -263,6 +239,49 @@ internal sealed class StockSharpPaperTrader : IPaperTrader, IPaperAccount
 		}
 	}
 
+	private static async Task<Portfolio> Account(Connector connector, CancellationToken cancellationToken)
+	{
+		var found = new TaskCompletionSource<Portfolio>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+		void OnPortfolio(Subscription _, Portfolio portfolio) => found.TrySetResult(portfolio);
+
+		connector.PortfolioReceived += OnPortfolio;
+
+		try
+		{
+			connector.Subscribe(new(DataType.PositionChanges, (Security)null));
+
+			return await found.Task.WaitAsync(_patience, cancellationToken);
+		}
+		catch (TimeoutException)
+		{
+			throw new InvalidOperationException(
+				"The broker did not report the account within " +
+				$"{_patience.TotalMinutes:0.#} minutes, so there is nothing to trade on.");
+		}
+		finally
+		{
+			connector.PortfolioReceived -= OnPortfolio;
+		}
+	}
+
+	private Connector Open()
+	{
+		var connector = new Connector();
+
+		try
+		{
+			connector.Adapter.InnerAdapters.Add(_adapters.Create(connector.TransactionIdGenerator));
+		}
+		catch
+		{
+			connector.Dispose();
+			throw;
+		}
+
+		return connector;
+	}
+
 	private async Task<Security> Find(Connector connector, string symbol, CancellationToken cancellationToken)
 	{
 		var found = new TaskCompletionSource<Security>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -293,32 +312,6 @@ internal sealed class StockSharpPaperTrader : IPaperTrader, IPaperAccount
 		finally
 		{
 			connector.SecurityReceived -= OnSecurity;
-		}
-	}
-
-	private static async Task<Portfolio> Account(Connector connector, CancellationToken cancellationToken)
-	{
-		var found = new TaskCompletionSource<Portfolio>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-		void OnPortfolio(Subscription _, Portfolio portfolio) => found.TrySetResult(portfolio);
-
-		connector.PortfolioReceived += OnPortfolio;
-
-		try
-		{
-			connector.Subscribe(new(DataType.PositionChanges, (Security)null));
-
-			return await found.Task.WaitAsync(_patience, cancellationToken);
-		}
-		catch (TimeoutException)
-		{
-			throw new InvalidOperationException(
-				"The broker did not report the account within " +
-				$"{_patience.TotalMinutes:0.#} minutes, so there is nothing to trade on.");
-		}
-		finally
-		{
-			connector.PortfolioReceived -= OnPortfolio;
 		}
 	}
 

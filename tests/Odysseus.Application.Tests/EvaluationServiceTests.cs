@@ -1,20 +1,10 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Persistence;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Putting a candidate through the fixed set of runs.
@@ -30,56 +20,71 @@ public class EvaluationServiceTests : OdysseusTestBase
 {
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 30, 0, DateTimeKind.Utc);
 
-	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
-	private sealed class Builder : IStrategyBuilder
-	{
-		public BuiltStrategy Build(StrategySpec spec)
-			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
-	}
-
-	/// <summary>A runner that reports the same modest, profitable run, and can be told to break.</summary>
-	private sealed class Runner : IBacktestRunner
-	{
-		/// <summary>What a run that breaks says went wrong, which the refusal is expected to quote.</summary>
-		public const string Breakage = "the strategy threw on its first candle";
-
-		private readonly List<BacktestRequest> _requests = [];
-
-		/// <summary>Every request the runner was handed, in the order it was handed them.</summary>
-		public IReadOnlyList<BacktestRequest> Requests => _requests;
-
-		/// <summary>Which run, counting from one, starts throwing. Zero for a runner that never does.</summary>
-		public int BreaksFrom { get; set; }
-
-		/// <summary>Whether each run wins a different amount, so that one run's numbers cannot pass for another's.</summary>
-		public bool DiffersByRun { get; set; }
-
-		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
+	private const string Sound =
+		"""
 		{
-			_requests.Add(request);
-
-			if (BreaksFrom > 0 && _requests.Count >= BreaksFrom)
-				throw new InvalidOperationException(Breakage);
-
-			var trades = new List<ExecutedTrade>();
-			var equity = new List<EquityPoint>();
-			var money = 100_000m;
-
-			for (var i = 0; i < 40; i++)
-			{
-				var entry = request.Bars.From.AddHours(i);
-				var profit = (i % 3 == 0 ? -8m : 12m) + (DiffersByRun ? _requests.Count : 0m);
-
-				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
-					100m + profit / 10m, 10m, 0.5m, 0.5m));
-
-				money += profit;
-				equity.Add(new(entry.AddMinutes(25), money));
-			}
-
-			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 80));
+		  "name": "Above its average",
+		  "thesis": "A price above its own recent average keeps going for a few bars.",
+		  "allowLong": true,
+		  "allowShort": false,
+		  "timeFrame": "00:05:00",
+		  "warmupBars": 45,
+		  "entries": [
+		    { "id": "e1", "direction": "Long", "condition": {
+		        "kind": "Compare",
+		        "left": { "kind": "Field", "field": "Close" },
+		        "operator": "GreaterThan",
+		        "right": { "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 20 }, "source": "Close" } } }
+		  ],
+		  "exits": [ { "id": "x1", "kind": "TimeExit", "direction": "Long", "length": { "kind": "Constant", "value": 5 } } ],
+		  "parameters": [],
+		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
 		}
-	}
+		""";
+
+	/// <summary>A specification whose indicators are all buried, one of them inside another.</summary>
+	private const string Nested =
+		"""
+		{
+		  "name": "Buried references",
+		  "thesis": "Indicators sit wherever the rules put them, including inside one another.",
+		  "allowLong": true,
+		  "allowShort": false,
+		  "timeFrame": "00:05:00",
+		  "warmupBars": 200,
+		  "entries": [
+		    { "id": "e1", "direction": "Long", "condition": {
+		        "kind": "All",
+		        "conditions": [
+		          { "kind": "Not", "condition": {
+		              "kind": "Compare",
+		              "left": { "kind": "Field", "field": "Close" },
+		              "operator": "LessThan",
+		              "right": { "kind": "Add", "operands": [
+		                  { "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 20 }, "source": "Close" },
+		                  { "kind": "Indicator", "name": "atr", "length": {
+		                      "kind": "Indicator", "name": "rsi", "length": { "kind": "Constant", "value": 14 }, "source": "Close" } }
+		              ] } } },
+		          { "kind": "Compare",
+		            "left": { "kind": "Field", "field": "Volume" },
+		            "operator": "GreaterThan",
+		            "right": { "kind": "Indicator", "name": "volumeSma", "length": { "kind": "Parameter", "name": "window" } } }
+		        ] } }
+		  ],
+		  "exits": [
+		    { "id": "x1", "kind": "Condition", "direction": "Long", "condition": {
+		        "kind": "Compare",
+		        "left": { "kind": "Field", "field": "Close" },
+		        "operator": "LessThan",
+		        "right": { "kind": "Abs", "value": {
+		            "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 50 }, "source": "Close" } } } }
+		  ],
+		  "parameters": [
+		    { "name": "window", "type": "Integer", "default": 20, "minimum": 10, "maximum": 50, "step": 1 }
+		  ],
+		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
+		}
+		""";
 
 	private string _root;
 	private SqliteProjectStore _store;
@@ -438,6 +443,28 @@ public class EvaluationServiceTests : OdysseusTestBase
 			new(0m, 0m, "", ""),
 			0);
 
+	/// <summary>Enough bars for a split whose development slice divides into three stretches.</summary>
+	private static IReadOnlyList<Candle> Bars()
+	{
+		var bars = new List<Candle>();
+		var time = _open;
+
+		for (var i = 0; i < 3_000; i++)
+		{
+			var close = 100m + Math.Round(5m * (decimal)Math.Sin(i * 2 * Math.PI / 60), 2);
+			var open = bars.Count == 0 ? close : bars[^1].Close;
+
+			bars.Add(new(time, open, Math.Max(open, close) + 0.05m, Math.Min(open, close) - 0.05m, close, 10_000m));
+
+			time = time.AddMinutes(5);
+
+			if (time.TimeOfDay >= TimeSpan.FromHours(21))
+				time = time.Date.AddDays(time.DayOfWeek == DayOfWeek.Friday ? 3 : 1).Add(_open.TimeOfDay);
+		}
+
+		return bars;
+	}
+
 	/// <summary>A project holding data and a candidate compiled from a specification.</summary>
 	private async Task<(ProjectId Project, CandidateId Candidate)> CandidateAsync()
 	{
@@ -464,91 +491,54 @@ public class EvaluationServiceTests : OdysseusTestBase
 		return (created.Id, built.Id);
 	}
 
-	/// <summary>Enough bars for a split whose development slice divides into three stretches.</summary>
-	private static IReadOnlyList<Candle> Bars()
+	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
+	private sealed class Builder : IStrategyBuilder
 	{
-		var bars = new List<Candle>();
-		var time = _open;
-
-		for (var i = 0; i < 3_000; i++)
-		{
-			var close = 100m + Math.Round(5m * (decimal)Math.Sin(i * 2 * Math.PI / 60), 2);
-			var open = bars.Count == 0 ? close : bars[^1].Close;
-
-			bars.Add(new(time, open, Math.Max(open, close) + 0.05m, Math.Min(open, close) - 0.05m, close, 10_000m));
-
-			time = time.AddMinutes(5);
-
-			if (time.TimeOfDay >= TimeSpan.FromHours(21))
-				time = time.Date.AddDays(time.DayOfWeek == DayOfWeek.Friday ? 3 : 1).Add(_open.TimeOfDay);
-		}
-
-		return bars;
+		public BuiltStrategy Build(StrategySpec spec)
+			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
 	}
 
-	private const string Sound =
-		"""
-		{
-		  "name": "Above its average",
-		  "thesis": "A price above its own recent average keeps going for a few bars.",
-		  "allowLong": true,
-		  "allowShort": false,
-		  "timeFrame": "00:05:00",
-		  "warmupBars": 45,
-		  "entries": [
-		    { "id": "e1", "direction": "Long", "condition": {
-		        "kind": "Compare",
-		        "left": { "kind": "Field", "field": "Close" },
-		        "operator": "GreaterThan",
-		        "right": { "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 20 }, "source": "Close" } } }
-		  ],
-		  "exits": [ { "id": "x1", "kind": "TimeExit", "direction": "Long", "length": { "kind": "Constant", "value": 5 } } ],
-		  "parameters": [],
-		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
-		}
-		""";
+	/// <summary>A runner that reports the same modest, profitable run, and can be told to break.</summary>
+	private sealed class Runner : IBacktestRunner
+	{
+		/// <summary>What a run that breaks says went wrong, which the refusal is expected to quote.</summary>
+		public const string Breakage = "the strategy threw on its first candle";
 
-	/// <summary>A specification whose indicators are all buried, one of them inside another.</summary>
-	private const string Nested =
-		"""
+		private readonly List<BacktestRequest> _requests = [];
+
+		/// <summary>Every request the runner was handed, in the order it was handed them.</summary>
+		public IReadOnlyList<BacktestRequest> Requests => _requests;
+
+		/// <summary>Which run, counting from one, starts throwing. Zero for a runner that never does.</summary>
+		public int BreaksFrom { get; set; }
+
+		/// <summary>Whether each run wins a different amount, so that one run's numbers cannot pass for another's.</summary>
+		public bool DiffersByRun { get; set; }
+
+		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
 		{
-		  "name": "Buried references",
-		  "thesis": "Indicators sit wherever the rules put them, including inside one another.",
-		  "allowLong": true,
-		  "allowShort": false,
-		  "timeFrame": "00:05:00",
-		  "warmupBars": 200,
-		  "entries": [
-		    { "id": "e1", "direction": "Long", "condition": {
-		        "kind": "All",
-		        "conditions": [
-		          { "kind": "Not", "condition": {
-		              "kind": "Compare",
-		              "left": { "kind": "Field", "field": "Close" },
-		              "operator": "LessThan",
-		              "right": { "kind": "Add", "operands": [
-		                  { "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 20 }, "source": "Close" },
-		                  { "kind": "Indicator", "name": "atr", "length": {
-		                      "kind": "Indicator", "name": "rsi", "length": { "kind": "Constant", "value": 14 }, "source": "Close" } }
-		              ] } } },
-		          { "kind": "Compare",
-		            "left": { "kind": "Field", "field": "Volume" },
-		            "operator": "GreaterThan",
-		            "right": { "kind": "Indicator", "name": "volumeSma", "length": { "kind": "Parameter", "name": "window" } } }
-		        ] } }
-		  ],
-		  "exits": [
-		    { "id": "x1", "kind": "Condition", "direction": "Long", "condition": {
-		        "kind": "Compare",
-		        "left": { "kind": "Field", "field": "Close" },
-		        "operator": "LessThan",
-		        "right": { "kind": "Abs", "value": {
-		            "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 50 }, "source": "Close" } } } }
-		  ],
-		  "parameters": [
-		    { "name": "window", "type": "Integer", "default": 20, "minimum": 10, "maximum": 50, "step": 1 }
-		  ],
-		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
+			_requests.Add(request);
+
+			if (BreaksFrom > 0 && _requests.Count >= BreaksFrom)
+				throw new InvalidOperationException(Breakage);
+
+			var trades = new List<ExecutedTrade>();
+			var equity = new List<EquityPoint>();
+			var money = 100_000m;
+
+			for (var i = 0; i < 40; i++)
+			{
+				var entry = request.Bars.From.AddHours(i);
+				var profit = (i % 3 == 0 ? -8m : 12m) + (DiffersByRun ? _requests.Count : 0m);
+
+				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
+					100m + profit / 10m, 10m, 0.5m, 0.5m));
+
+				money += profit;
+				equity.Add(new(entry.AddMinutes(25), money));
+			}
+
+			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 80));
 		}
-		""";
+	}
 }

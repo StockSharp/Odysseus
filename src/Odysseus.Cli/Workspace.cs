@@ -1,15 +1,7 @@
 namespace Odysseus.Cli;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Application;
 using Odysseus.Broker;
 using Odysseus.Compiler;
-using Odysseus.Domain;
 using Odysseus.Engine;
 using Odysseus.Persistence;
 using Odysseus.Platform;
@@ -364,4 +356,3 @@ public sealed class Workspace : IDisposable
 		File.WriteAllLines(Path.Combine(_root, CurrentFileName), lines);
 	}
 }
-

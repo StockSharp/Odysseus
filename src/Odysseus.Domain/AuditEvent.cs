@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// One permanently recorded action.
 /// </summary>

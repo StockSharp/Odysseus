@@ -1,15 +1,6 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.TestKit;
 
 /// <summary>
 /// A remote StockSharp storage server as the place history is imported from instead of a broker.

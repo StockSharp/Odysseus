@@ -53,7 +53,7 @@ public static class StrategyTranslator
 
 	// Stands in for the generated class name while the identity is being taken, so that a strategy
 	// renamed is not a strategy rewritten.
-	private const string _identityClassName = "GeneratedStrategy";
+	private const string IdentityClassName = "GeneratedStrategy";
 
 	private static readonly IReadOnlyDictionary<string, string> _indicatorTypes =
 		new Dictionary<string, string>(StringComparer.Ordinal)
@@ -96,7 +96,7 @@ public static class StrategyTranslator
 		// The identity is taken over the same emission with the wording left out: the class name replaced
 		// by a fixed one and the two documentation lines dropped. Every rule, parameter and limit still
 		// reaches the hash, so the only difference it stops seeing is the one that changes nothing.
-		var identity = Emit(spec, _identityClassName, indicators, prose: false);
+		var identity = Emit(spec, IdentityClassName, indicators, prose: false);
 
 		return new(
 			className,

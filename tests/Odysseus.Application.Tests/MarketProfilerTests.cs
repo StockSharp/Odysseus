@@ -1,15 +1,6 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Platform;
-using Odysseus.TestKit;
 
 /// <summary>
 /// What <c>analyze_market</c> actually measures, checked against series whose statistics can be worked
@@ -29,23 +20,23 @@ public class MarketProfilerTests : OdysseusTestBase
 
 	private static readonly TimeSpan _frame = TimeSpan.FromMinutes(5);
 
-	private static readonly IMarketProfiler Profiler = new StockSharpMarketProfiler();
+	private static readonly IMarketProfiler _profiler = new StockSharpMarketProfiler();
 
 	/// <summary>Nothing can be measured on nothing, and saying so beats dividing by zero.</summary>
 	[TestMethod]
 	public void AnEmptySeriesIsRefused()
 	{
-		var error = Throws<ArgumentException>(() => Profiler.Measure("AAA", []));
+		var error = Throws<ArgumentException>(() => _profiler.Measure("AAA", []));
 
 		IsTrue(error.Message.Contains("has 0 bars", StringComparison.Ordinal), error.Message);
-		IsTrue(error.Message.Contains($"at least {Profiler.MinimumBars}", StringComparison.Ordinal), error.Message);
+		IsTrue(error.Message.Contains($"at least {_profiler.MinimumBars}", StringComparison.Ordinal), error.Message);
 	}
 
 	/// <summary>One bar is a price, not a history.</summary>
 	[TestMethod]
 	public void ASingleBarIsRefused()
 	{
-		var error = Throws<ArgumentException>(() => Profiler.Measure("AAA", [Level(100m)]));
+		var error = Throws<ArgumentException>(() => _profiler.Measure("AAA", [Level(100m)]));
 
 		IsTrue(error.Message.Contains("has 1 bars", StringComparison.Ordinal), error.Message);
 	}
@@ -54,12 +45,12 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void TheMinimumIsExactlyWhereItSays()
 	{
-		var justShort = Series(1, Profiler.MinimumBars - 1, (_, _) => Level(100m));
-		var justEnough = Series(1, Profiler.MinimumBars, (_, _) => Level(100m));
+		var justShort = Series(1, _profiler.MinimumBars - 1, (_, _) => Level(100m));
+		var justEnough = Series(1, _profiler.MinimumBars, (_, _) => Level(100m));
 
-		Throws<ArgumentException>(() => Profiler.Measure("AAA", justShort));
+		Throws<ArgumentException>(() => _profiler.Measure("AAA", justShort));
 
-		AreEqual(Profiler.MinimumBars, Profiler.Measure("AAA", justEnough).Coverage.Bars);
+		AreEqual(_profiler.MinimumBars, _profiler.Measure("AAA", justEnough).Coverage.Bars);
 	}
 
 	/// <summary>A measurement needs to know what it is measuring, and what it is measuring it on.</summary>
@@ -68,9 +59,9 @@ public class MarketProfilerTests : OdysseusTestBase
 	{
 		var bars = Series(50, 6, (_, _) => Level(100m));
 
-		Throws<ArgumentNullException>(() => Profiler.Measure(null, bars));
-		Throws<ArgumentException>(() => Profiler.Measure(" ", bars));
-		Throws<ArgumentNullException>(() => Profiler.Measure("AAA", null));
+		Throws<ArgumentNullException>(() => _profiler.Measure(null, bars));
+		Throws<ArgumentException>(() => _profiler.Measure(" ", bars));
+		Throws<ArgumentNullException>(() => _profiler.Measure("AAA", null));
 	}
 
 	/// <summary>
@@ -79,7 +70,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void AFlatSeriesDoesNotMove()
 	{
-		var profile = Profiler.Measure("AAA", Series(50, 6, (_, _) => Level(100m)));
+		var profile = _profiler.Measure("AAA", Series(50, 6, (_, _) => Level(100m)));
 
 		AreEqual(0m, profile.Movement.MedianBarRangePercent);
 		AreEqual(0m, profile.Movement.UpperBarRangePercent);
@@ -95,7 +86,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void AFlatSeriesHasNoMemory()
 	{
-		var profile = Profiler.Measure("AAA", Series(50, 6, (_, _) => Level(100m)));
+		var profile = _profiler.Measure("AAA", Series(50, 6, (_, _) => Level(100m)));
 
 		AreEqual(0m, profile.Persistence.Autocorrelation1);
 		AreEqual(0m, profile.Persistence.Autocorrelation5);
@@ -111,7 +102,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void AFlatSeriesHasNoEvents()
 	{
-		var edge = Profiler.Measure("AAA", Series(50, 6, (_, _) => Level(100m))).Edge;
+		var edge = _profiler.Measure("AAA", Series(50, 6, (_, _) => Level(100m))).Edge;
 
 		AreEqual(0, edge.BreakoutCount);
 		AreEqual(0m, edge.BreakoutFollowThroughPercent);
@@ -126,7 +117,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void CoverageReportsWhatItWasGiven()
 	{
-		var profile = Profiler.Measure("AAA", Series(50, 6, (_, _) => Level(100m)));
+		var profile = _profiler.Measure("AAA", Series(50, 6, (_, _) => Level(100m)));
 
 		AreEqual("AAA", profile.Coverage.Symbol);
 		AreEqual(300, profile.Coverage.Bars);
@@ -149,7 +140,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	public void APerfectOscillationComesStraightBack()
 	{
 		var bars = Series(50, 6, (day, bar) => Level((day * 6 + bar) % 2 == 0 ? 100m : 101m));
-		var profile = Profiler.Measure("AAA", bars);
+		var profile = _profiler.Measure("AAA", bars);
 
 		AreEqual(-0.9967m, profile.Persistence.Autocorrelation1);
 		AreEqual(-0.9833m, profile.Persistence.Autocorrelation5);
@@ -181,7 +172,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void APureTrendBreaksOutOnEveryBar()
 	{
-		var profile = Profiler.Measure("AAA", Series(50, 6, (day, bar) => Level(100m + day * 6 + bar)));
+		var profile = _profiler.Measure("AAA", Series(50, 6, (day, bar) => Level(100m + day * 6 + bar)));
 
 		// The window needs twenty bars behind it and five ahead: 300 - 20 - 5 of the 300 qualify.
 		AreEqual(275, profile.Edge.BreakoutCount);
@@ -214,7 +205,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void APureTrendExtendsItsMoves()
 	{
-		var profile = Profiler.Measure("AAA", Series(50, 6, (day, bar) => Level(100m + day * 6 + bar)));
+		var profile = _profiler.Measure("AAA", Series(50, 6, (day, bar) => Level(100m + day * 6 + bar)));
 
 		IsTrue(profile.Persistence.Autocorrelation1 is > 0.98m and <= 1m, $"{profile.Persistence.Autocorrelation1} is not the autocorrelation of a smooth monotone series.");
 		IsTrue(profile.Persistence.VarianceRatio5 is > 4.5m and < 5.5m, $"a perfectly persistent series has a five-bar variance ratio of about five, not {profile.Persistence.VarianceRatio5}.");
@@ -241,7 +232,7 @@ public class MarketProfilerTests : OdysseusTestBase
 			_ => Level(100m),
 		});
 
-		var edge = Profiler.Measure("AAA", bars).Edge;
+		var edge = _profiler.Measure("AAA", bars).Edge;
 
 		AreEqual(2, edge.BreakoutCount);
 		AreEqual(-9.0909m, edge.BreakoutFollowThroughPercent);
@@ -267,7 +258,7 @@ public class MarketProfilerTests : OdysseusTestBase
 			return new Candle(default, 100m, 100m + index / 100m, 100m, 100m, 10m);
 		});
 
-		var movement = Profiler.Measure("AAA", bars).Movement;
+		var movement = _profiler.Measure("AAA", bars).Movement;
 
 		AreEqual(1.5000m, movement.MedianBarRangePercent);
 		AreEqual(2.7000m, movement.UpperBarRangePercent);
@@ -291,7 +282,7 @@ public class MarketProfilerTests : OdysseusTestBase
 			return new Candle(default, 100m, 100m, 100m, 100m, (index is 100 or 200) ? 100m : 10m);
 		});
 
-		var coverage = Profiler.Measure("AAA", bars).Coverage;
+		var coverage = _profiler.Measure("AAA", bars).Coverage;
 
 		// Two of the 300 - 30 bars that could be judged carried ten times the recent average.
 		AreEqual(0.7407m, coverage.HighVolumeShare);
@@ -313,7 +304,7 @@ public class MarketProfilerTests : OdysseusTestBase
 			? new Candle(default, 0m, 0m, 0m, 0m, 0m)
 			: Level(100m));
 
-		var profile = Profiler.Measure("AAA", bars);
+		var profile = _profiler.Measure("AAA", bars);
 
 		AreEqual(50, profile.Coverage.Sessions, "the day still happened; only its range is unmeasurable.");
 		AreEqual(0m, profile.Movement.MedianDailyRangePercent);
@@ -323,7 +314,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void AllZeroPricesMeasureToNothing()
 	{
-		var profile = Profiler.Measure("AAA", Series(50, 6, (_, _) => new Candle(default, 0m, 0m, 0m, 0m, 0m)));
+		var profile = _profiler.Measure("AAA", Series(50, 6, (_, _) => new Candle(default, 0m, 0m, 0m, 0m, 0m)));
 
 		AreEqual(300, profile.Coverage.Bars);
 		AreEqual(0m, profile.Coverage.MedianVolume);
@@ -345,7 +336,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void AnEmptySeriesHasNoActiveSession()
 	{
-		var (open, close) = Profiler.ActiveSession([]);
+		var (open, close) = _profiler.ActiveSession([]);
 
 		AreEqual(TimeSpan.Zero, open);
 		AreEqual(TimeSpan.FromHours(24), close);
@@ -357,7 +348,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	{
 		var bars = new[] { At(9, 0, 0m), At(10, 0, 0m), At(12, 0, 0m) };
 
-		var (open, close) = Profiler.ActiveSession(bars);
+		var (open, close) = _profiler.ActiveSession(bars);
 
 		AreEqual(TimeSpan.FromHours(9), open);
 		AreEqual(TimeSpan.FromHours(12), close);
@@ -379,7 +370,7 @@ public class MarketProfilerTests : OdysseusTestBase
 			At(23, 0, 5m),
 		};
 
-		var (open, close) = Profiler.ActiveSession(bars);
+		var (open, close) = _profiler.ActiveSession(bars);
 
 		AreEqual(new TimeSpan(14, 30, 0), open);
 		AreEqual(new TimeSpan(16, 30, 0), close);
@@ -391,7 +382,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	{
 		var bars = new[] { At(14, 30, 10m), At(14, 30, 20m) };
 
-		var (open, close) = Profiler.ActiveSession(bars);
+		var (open, close) = _profiler.ActiveSession(bars);
 
 		AreEqual(new TimeSpan(14, 30, 0), open);
 		AreEqual(new TimeSpan(14, 30, 0), close);
@@ -412,7 +403,7 @@ public class MarketProfilerTests : OdysseusTestBase
 			return new Candle(default, 100m, 100.5m, 99.5m, 100m, (minute is >= 600 and <= 900) ? 100m : 1m);
 		});
 
-		var profile = Profiler.Measure("AAA", bars);
+		var profile = _profiler.Measure("AAA", bars);
 		var session = profile.Session;
 
 		AreEqual(4, session.Count);
@@ -451,7 +442,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	{
 		var bars = Series(_start, TimeSpan.FromDays(1), 250, 1, (_, _) => new Candle(default, 100m, 101m, 99m, 100m, 10m));
 
-		var session = Profiler.Measure("AAA", bars).Session;
+		var session = _profiler.Measure("AAA", bars).Session;
 
 		AreEqual(1, session.Count, $"the day was divided into {session.Count} parts that share their bars.");
 		AreEqual("first 30 minutes", session[0].Bucket);
@@ -465,7 +456,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void ThinHistoryIsCaveated()
 	{
-		var profile = Profiler.Measure("AAA", Series(5, 40, (_, _) => Level(100m)));
+		var profile = _profiler.Measure("AAA", Series(5, 40, (_, _) => Level(100m)));
 
 		AreEqual(2, profile.Caveats.Count);
 		IsTrue(profile.Caveats.Any(c => c.Contains("5 trading days", StringComparison.Ordinal)), string.Join(" | ", profile.Caveats));
@@ -476,7 +467,7 @@ public class MarketProfilerTests : OdysseusTestBase
 	[TestMethod]
 	public void ThickHistoryIsNotCaveated()
 	{
-		var profile = Profiler.Measure("AAA", Series(25, 42, (_, _) => Level(100m)));
+		var profile = _profiler.Measure("AAA", Series(25, 42, (_, _) => Level(100m)));
 
 		AreEqual(1050, profile.Coverage.Bars);
 		AreEqual(25, profile.Coverage.Sessions);

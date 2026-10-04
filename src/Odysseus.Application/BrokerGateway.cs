@@ -1,12 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// The broker ports this server answers itself, and the connector a deployment is told to load.
 /// </summary>
@@ -83,6 +76,9 @@ public sealed class BrokerGateway : IHistorySource, IPaperAccount, ISecurityLook
 	/// <summary>How a connector is loaded, so a tool can inspect one without binding it.</summary>
 	public IConnectorFactory Connectors => _factory;
 
+	/// <inheritdoc />
+	string IHistorySource.SourceName => Bound("Downloading history").History.SourceName;
+
 	/// <summary>
 	/// Loads a connector and binds it to the four ports.
 	/// </summary>
@@ -120,9 +116,6 @@ public sealed class BrokerGateway : IHistorySource, IPaperAccount, ISecurityLook
 			?? _named
 			?? throw new BrokerNotConfiguredException(
 				"Starting a deployment, which names a connector for the process that will trade it to load,");
-
-	/// <inheritdoc />
-	string IHistorySource.SourceName => Bound("Downloading history").History.SourceName;
 
 	/// <inheritdoc />
 	public Task<IReadOnlyList<Candle>> GetBarsAsync(

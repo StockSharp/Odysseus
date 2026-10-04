@@ -1,9 +1,6 @@
 namespace Odysseus.Platform;
 
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 /// <summary>
 /// The assemblies a generated strategy is written against.

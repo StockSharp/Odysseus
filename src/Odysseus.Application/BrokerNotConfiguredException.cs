@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// Raised when something that needs a broker account is asked for on a server that has none.
 /// </summary>

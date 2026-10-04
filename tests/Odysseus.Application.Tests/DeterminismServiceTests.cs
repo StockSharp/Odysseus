@@ -1,19 +1,10 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Persistence;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Whether a candidate gives the same answer twice: what its source reaches, and two runs set side by side.
@@ -22,50 +13,6 @@ using Odysseus.TestKit;
 public class DeterminismServiceTests : OdysseusTestBase
 {
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 30, 0, DateTimeKind.Utc);
-
-	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
-	private sealed class Builder : IStrategyBuilder
-	{
-		public BuiltStrategy Build(StrategySpec spec)
-			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
-	}
-
-	/// <summary>A source reader that reports whatever the test says the source breaks.</summary>
-	private sealed class Inspector : IStrategyInspector
-	{
-		public IReadOnlyList<BuildProblem> Problems { get; set; } = [];
-
-		public string Inspected { get; private set; }
-
-		public IReadOnlyList<BuildProblem> Inspect(string source)
-		{
-			Inspected = source;
-			return Problems;
-		}
-	}
-
-	/// <summary>A runner whose runs the test decides, one after another.</summary>
-	private sealed class Runner : IBacktestRunner
-	{
-		private int _runs;
-
-		public decimal SecondEntry { get; set; } = 100m;
-
-		public int Runs => _runs;
-
-		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
-		{
-			var entry = Interlocked.Increment(ref _runs) == 1 ? 100m : SecondEntry;
-			var time = request.Bars.From.AddHours(1);
-
-			return Task.FromResult(new BacktestOutcome(
-				[new("t1", request.Symbol, TradeDirections.Long, time, entry, time.AddMinutes(30), 101m, 10m, 0.5m, 0.5m)],
-				[new(time, 100_000m)],
-				request.Bars.Count,
-				0,
-				2));
-		}
-	}
 
 	private string _root;
 	private SqliteProjectStore _store;
@@ -193,36 +140,6 @@ public class DeterminismServiceTests : OdysseusTestBase
 		AreEqual(0, _runner.Runs, "the candidate was run on a budget that could not pay for the check.");
 	}
 
-	private async Task<int> SpentAsync(ProjectId project)
-	{
-		var existing = await _store.OpenAsync(project, CancellationToken);
-		var budget = ResearchBudget.Restore(existing.Budget);
-
-		return existing.Budget.MaxBacktests - budget.RemainingBacktests;
-	}
-
-	private async Task<(ProjectId Project, CandidateId Candidate)> ReadyAsync()
-	{
-		var created = await _projects.CreateProjectAsync("determinism", Guid.NewGuid().ToString("n"), Actors.User, CancellationToken);
-
-		var project = created.Id;
-
-		var bars = new Dictionary<string, IReadOnlyList<Candle>> { ["NVDA"] = Bars() };
-		var imported = DatasetBuilder.Build(bars, TimeSpan.FromMinutes(5), "test", isSynthetic: true);
-
-		await _datasets.SaveAsync(project, imported, CancellationToken);
-
-		var opened = await _store.OpenAsync(project, CancellationToken);
-
-		await _store.UpdateAsync(opened.WithDataset(imported.Manifest.Id, DateTime.UtcNow), CancellationToken);
-
-		var spec = await _specs.AddAsync(project, Spec(), Actors.Agent, DateTime.UtcNow, CancellationToken);
-
-		var built = await _candidates.BuildAsync(project, spec.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
-
-		return (project, built.Id);
-	}
-
 	private static IReadOnlyList<Candle> Bars()
 	{
 		var bars = new List<Candle>();
@@ -266,4 +183,78 @@ public class DeterminismServiceTests : OdysseusTestBase
 		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
 		}
 		""";
+
+	private async Task<int> SpentAsync(ProjectId project)
+	{
+		var existing = await _store.OpenAsync(project, CancellationToken);
+		var budget = ResearchBudget.Restore(existing.Budget);
+
+		return existing.Budget.MaxBacktests - budget.RemainingBacktests;
+	}
+
+	private async Task<(ProjectId Project, CandidateId Candidate)> ReadyAsync()
+	{
+		var created = await _projects.CreateProjectAsync("determinism", Guid.NewGuid().ToString("n"), Actors.User, CancellationToken);
+
+		var project = created.Id;
+
+		var bars = new Dictionary<string, IReadOnlyList<Candle>> { ["NVDA"] = Bars() };
+		var imported = DatasetBuilder.Build(bars, TimeSpan.FromMinutes(5), "test", isSynthetic: true);
+
+		await _datasets.SaveAsync(project, imported, CancellationToken);
+
+		var opened = await _store.OpenAsync(project, CancellationToken);
+
+		await _store.UpdateAsync(opened.WithDataset(imported.Manifest.Id, DateTime.UtcNow), CancellationToken);
+
+		var spec = await _specs.AddAsync(project, Spec(), Actors.Agent, DateTime.UtcNow, CancellationToken);
+
+		var built = await _candidates.BuildAsync(project, spec.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
+
+		return (project, built.Id);
+	}
+
+	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
+	private sealed class Builder : IStrategyBuilder
+	{
+		public BuiltStrategy Build(StrategySpec spec)
+			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
+	}
+
+	/// <summary>A source reader that reports whatever the test says the source breaks.</summary>
+	private sealed class Inspector : IStrategyInspector
+	{
+		public IReadOnlyList<BuildProblem> Problems { get; set; } = [];
+
+		public string Inspected { get; private set; }
+
+		public IReadOnlyList<BuildProblem> Inspect(string source)
+		{
+			Inspected = source;
+			return Problems;
+		}
+	}
+
+	/// <summary>A runner whose runs the test decides, one after another.</summary>
+	private sealed class Runner : IBacktestRunner
+	{
+		private int _runs;
+
+		public decimal SecondEntry { get; set; } = 100m;
+
+		public int Runs => _runs;
+
+		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
+		{
+			var entry = Interlocked.Increment(ref _runs) == 1 ? 100m : SecondEntry;
+			var time = request.Bars.From.AddHours(1);
+
+			return Task.FromResult(new BacktestOutcome(
+				[new("t1", request.Symbol, TradeDirections.Long, time, entry, time.AddMinutes(30), 101m, 10m, 0.5m, 0.5m)],
+				[new(time, 100_000m)],
+				request.Bars.Count,
+				0,
+				2));
+		}
+	}
 }

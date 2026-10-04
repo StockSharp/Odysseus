@@ -1,10 +1,5 @@
 namespace Odysseus.Domain.Tests;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Reading what a symbol carries from the symbol itself.
 /// </summary>

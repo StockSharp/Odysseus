@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System.Threading;
-
 /// <summary>
 /// The person who started this process, as far as it can reach them.
 /// </summary>

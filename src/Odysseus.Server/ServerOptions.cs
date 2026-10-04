@@ -1,12 +1,8 @@
 namespace Odysseus.Server;
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-
-using Odysseus.Application;
 
 /// <summary>
 /// How this instance was started.
@@ -36,6 +32,11 @@ public sealed record ServerOptions(
 	IReadOnlyList<string> ConnectorAllow,
 	IReadOnlyList<long> AllowedProducts)
 {
+	/// <summary>The gallery a connector comes from unless the operator names another.</summary>
+	public const string DefaultSource = "https://api.nuget.org/v3/index.json";
+
+	/// <summary>The only package family this server downloads unless the operator widens it.</summary>
+	public const string DefaultAllow = "StockSharp.";
 	private const string RootVariable = "ODYSSEUS_PROJECTS_ROOT";
 	private const string MarketDataVariable = "ODYSSEUS_MARKET_DATA";
 	private const string RemoteStorageVariable = "ODYSSEUS_REMOTE_STORAGE";
@@ -44,12 +45,6 @@ public sealed record ServerOptions(
 	private const string SourcesVariable = "ODYSSEUS_CONNECTOR_SOURCES";
 	private const string AllowVariable = "ODYSSEUS_CONNECTOR_ALLOW";
 	private const string ProductsVariable = "ODYSSEUS_PRODUCT_ALLOW";
-
-	/// <summary>The gallery a connector comes from unless the operator names another.</summary>
-	public const string DefaultSource = "https://api.nuget.org/v3/index.json";
-
-	/// <summary>The only package family this server downloads unless the operator widens it.</summary>
-	public const string DefaultAllow = "StockSharp.";
 
 	/// <summary>Where downloaded connectors are kept between runs.</summary>
 	public string ConnectorCache => Path.Combine(ProjectsRoot, "connectors");

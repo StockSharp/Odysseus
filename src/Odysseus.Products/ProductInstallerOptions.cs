@@ -1,10 +1,6 @@
 namespace Odysseus.Products;
 
-using System;
-using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 /// <summary>
@@ -27,7 +23,8 @@ using System.Runtime.InteropServices;
 /// directory and its own <c>products/{name}</c> default against the current directory, and writes its
 /// text log to <c>Logs/</c> relative to it as well, so setting one place settles all three. What is not
 /// confined is the folder the installer keeps its account, its package cache and its registry of
-/// installations in: that is machine-wide, has no switch, and is stated rather than pretended about.
+/// installations in: that is under the user's documents folder, has no switch, and is stated rather
+/// than pretended about.
 /// </remarks>
 public sealed record ProductInstallerOptions(
 	IReadOnlyList<string> LookedIn,
@@ -66,6 +63,9 @@ public sealed record ProductInstallerOptions(
 	/// <summary>Whether a StockSharp account is signed in on this machine.</summary>
 	public bool HasAccount => !string.IsNullOrWhiteSpace(AccountFile) && File.Exists(AccountFile);
 
+	private static string Extension
+		=> RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
+
 	/// <summary>
 	/// The options a server starts with.
 	/// </summary>
@@ -77,10 +77,12 @@ public sealed record ProductInstallerOptions(
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(projectsRoot);
 
+		var installRoot = Path.Combine(Path.GetFullPath(projectsRoot), ProductsFolder);
+
 		return new(
 			LookedIn: Candidates(),
-			InstallRoot: Path.Combine(Path.GetFullPath(projectsRoot), ProductsFolder),
-			AccountFile: DefaultAccountFile(),
+			InstallRoot: installRoot,
+			AccountFile: AccountFileOf(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), installRoot),
 			AllowedProducts: Identifiers(allowedProducts),
 			ForeignProcesses: [InstallerUiProcess, InstallerConsoleProcess],
 
@@ -117,20 +119,26 @@ public sealed record ProductInstallerOptions(
 	/// <summary>
 	/// The file the installer reads its StockSharp account from.
 	/// </summary>
+	/// <param name="documents">
+	/// The current user's documents folder as the platform names it, or an empty string where it names
+	/// none.
+	/// </param>
+	/// <param name="installRoot">Directory the console is started in.</param>
 	/// <returns>The path, which need not exist.</returns>
 	/// <remarks>
-	/// Machine-wide and outside everything else this server confines. The installer builds it from the
-	/// current user's documents folder and has neither a switch nor a variable for it, so this is the
-	/// same path computed the same way rather than a place of ours the console would ignore.
+	/// Outside everything else this server confines. The installer builds it from the current user's
+	/// documents folder and has neither a switch nor a variable for it, so this is the same path
+	/// computed the same way rather than a place of ours the console would ignore.
+	///
+	/// The same way includes the machine that has no such folder, which a server usually is: the
+	/// installer is then left with a bare name and settles it against the directory it was started in.
 	/// </remarks>
-	public static string DefaultAccountFile()
+	public static string AccountFileOf(string documents, string installRoot)
 	{
-		var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+		ArgumentNullException.ThrowIfNull(documents);
+		ArgumentException.ThrowIfNullOrWhiteSpace(installRoot);
 
-		// GetFolderPath answers with an empty string where the platform cannot name the folder, which a
-		// container with no home directory is. Settled against the current directory rather than left
-		// relative, so the path reported is one somebody can go and look at.
-		return Path.GetFullPath(Path.Combine(documents, "StockSharp", "credentials.json"));
+		return Path.GetFullPath(Path.Combine(documents, "StockSharp", "credentials.json"), Path.GetFullPath(installRoot));
 	}
 
 	/// <summary>
@@ -224,7 +232,4 @@ public sealed record ProductInstallerOptions(
 
 		return [.. allowedProducts.Where(id => id > 0).Distinct().Order()];
 	}
-
-	private static string Extension
-		=> RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
 }

@@ -1,10 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 /// <summary>
 /// One setting of the numbers a specification declared, and how it did.
 /// </summary>

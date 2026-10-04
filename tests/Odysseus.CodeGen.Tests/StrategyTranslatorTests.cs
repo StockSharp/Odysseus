@@ -1,16 +1,5 @@
 namespace Odysseus.CodeGen.Tests;
 
-using System;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.CodeGen;
-using Odysseus.Spec;
-using Odysseus.TestKit;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// Turning a checked specification into C#.
 /// </summary>
@@ -161,13 +150,6 @@ public class StrategyTranslatorTests : OdysseusTestBase
 		AreEqual(RulesOf(original.Source), RulesOf(retuned.Source),
 			"the rules changed along with the starting value, so the number leaked out of the declaration.");
 	}
-
-	private static int Occurrences(string text, string part)
-		=> (text.Length - text.Replace(part, string.Empty, StringComparison.Ordinal).Length) / part.Length;
-
-	/// <summary>The part of the generated source that decides what to do, without the declarations.</summary>
-	private static string RulesOf(string source)
-		=> source[source.IndexOf("private void ProcessCandle", StringComparison.Ordinal)..];
 
 	/// <summary>
 	/// Widening the range a parameter may be searched over does change what the code has to wait for,
@@ -365,6 +347,13 @@ public class StrategyTranslatorTests : OdysseusTestBase
 
 		AreEqual("S3_way_split", StrategyTranslator.Translate(Breakout() with { Name = "3-way split!" }).ClassName);
 	}
+
+	private static int Occurrences(string text, string part)
+		=> (text.Length - text.Replace(part, string.Empty, StringComparison.Ordinal).Length) / part.Length;
+
+	/// <summary>The part of the generated source that decides what to do, without the declarations.</summary>
+	private static string RulesOf(string source)
+		=> source[source.IndexOf("private void ProcessCandle", StringComparison.Ordinal)..];
 
 	private static StrategySpec Breakout()
 		=> new()

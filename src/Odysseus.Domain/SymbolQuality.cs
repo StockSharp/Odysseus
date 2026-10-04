@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// What was found in the bars of one symbol.
 /// </summary>

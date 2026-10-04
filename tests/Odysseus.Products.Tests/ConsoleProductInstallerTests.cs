@@ -1,17 +1,11 @@
 namespace Odysseus.Products.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using Odysseus.Application;
-using Odysseus.Products;
-using Odysseus.TestKit;
 
 /// <summary>
 /// What happens when the program this server drives is not there, or is there and misbehaves.
@@ -480,6 +474,44 @@ public class ConsoleProductInstallerTests : OdysseusTestBase
 		IsTrue(outcome.Took > TimeSpan.Zero, "an invocation that ran a program took no time at all.");
 	}
 
+	private static string[] Arguments(ProductOutcome outcome)
+		=> [.. outcome.Unparsed
+			.Where(line => line.StartsWith(ArgumentPrefix, StringComparison.Ordinal))
+			.Select(line => line[ArgumentPrefix.Length..])];
+
+	private static string Line(ProductOutcome outcome, string prefix)
+	{
+		var line = outcome.Unparsed.FirstOrDefault(l => l.StartsWith(prefix, StringComparison.Ordinal));
+
+		return line is null ? string.Empty : line[prefix.Length..];
+	}
+
+	private static string Describe(ProductOutcome outcome)
+		=> $"exit {outcome.ExitCode}, products [{string.Join(" | ", outcome.Products.Select(p => p.Name))}], " +
+			$"unparsed [{string.Join(" | ", outcome.Unparsed)}]";
+
+	/// <summary>
+	/// Where the misbehaving installer was built. It is reached by path rather than by reference, which
+	/// is the whole point of driving a program rather than linking it.
+	/// </summary>
+	private static string Stub()
+	{
+		var configuration = AppContext.BaseDirectory.Contains(
+			$"{Path.DirectorySeparatorChar}Debug{Path.DirectorySeparatorChar}",
+			StringComparison.OrdinalIgnoreCase)
+			? "Debug"
+			: "Release";
+
+		var candidate = Path.Combine(
+			RepositoryRoot, "tests", "Odysseus.InstallerStub", "bin", configuration, "net10.0",
+			OperatingSystem.IsWindows() ? "Odysseus.InstallerStub.exe" : "Odysseus.InstallerStub");
+
+		if (!File.Exists(candidate))
+			Fail("The misbehaving installer was not found where the build puts it. This project builds it, so its absence is a broken build or a wrong path.");
+
+		return candidate;
+	}
+
 	private ConsoleProductInstaller Driver(string behaviour)
 	{
 		Environment.SetEnvironmentVariable(BehaviourVariable, behaviour);
@@ -513,46 +545,6 @@ public class ConsoleProductInstallerTests : OdysseusTestBase
 		yield return () => installer.RemoveAsync(9, removeData: false, CancellationToken).AsTask();
 	}
 
-	private static string[] Arguments(ProductOutcome outcome)
-		=> [.. outcome.Unparsed
-			.Where(line => line.StartsWith(ArgumentPrefix, StringComparison.Ordinal))
-			.Select(line => line[ArgumentPrefix.Length..])];
-
-	private static string Line(ProductOutcome outcome, string prefix)
-	{
-		var line = outcome.Unparsed.FirstOrDefault(l => l.StartsWith(prefix, StringComparison.Ordinal));
-
-		return line is null ? string.Empty : line[prefix.Length..];
-	}
-
-	private static string Describe(ProductOutcome outcome)
-		=> $"exit {outcome.ExitCode}, products [{string.Join(" | ", outcome.Products.Select(p => p.Name))}], " +
-			$"unparsed [{string.Join(" | ", outcome.Unparsed)}]";
-
 	private string Missing()
 		=> Path.Combine(_root, $"StockSharp.Installer.Console-{Guid.NewGuid():n}.exe");
-
-	/// <summary>
-	/// Where the misbehaving installer was built. It is reached by path rather than by reference, which
-	/// is the whole point of driving a program rather than linking it.
-	/// </summary>
-	private static string Stub()
-	{
-		var configuration = AppContext.BaseDirectory.Contains(
-			$"{Path.DirectorySeparatorChar}Debug{Path.DirectorySeparatorChar}",
-			StringComparison.OrdinalIgnoreCase)
-			? "Debug"
-			: "Release";
-
-		var candidate = Path.Combine(
-			RepositoryRoot, "tests", "Odysseus.InstallerStub", "bin", configuration, "net10.0",
-			OperatingSystem.IsWindows() ? "Odysseus.InstallerStub.exe" : "Odysseus.InstallerStub");
-
-		if (!File.Exists(candidate))
-		{
-			Fail("The misbehaving installer was not found where the build puts it. This project builds it, so its absence is a broken build or a wrong path.");
-		}
-
-		return candidate;
-	}
 }

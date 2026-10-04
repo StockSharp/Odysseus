@@ -1,7 +1,5 @@
 namespace Odysseus.Packages;
 
-using System.Collections.Generic;
-
 /// <summary>
 /// One package this package depends on, and the lowest version it will accept.
 /// </summary>

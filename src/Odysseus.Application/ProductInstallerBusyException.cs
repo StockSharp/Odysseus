@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// Raised when another installer holds the machine.
 /// </summary>

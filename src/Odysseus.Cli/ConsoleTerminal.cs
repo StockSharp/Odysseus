@@ -1,9 +1,5 @@
 namespace Odysseus.Cli;
 
-using System.Threading;
-
-using Odysseus.Application;
-
 using Con = System.Console;
 
 /// <summary>

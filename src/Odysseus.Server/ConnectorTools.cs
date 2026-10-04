@@ -1,15 +1,5 @@
 namespace Odysseus.Server;
 
-using System;
-using System.ComponentModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-using ModelContextProtocol.Server;
-
-using Odysseus.Application;
-
 /// <summary>
 /// Choosing which broker this server talks to.
 /// </summary>

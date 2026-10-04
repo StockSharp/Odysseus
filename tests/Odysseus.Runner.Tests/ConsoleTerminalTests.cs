@@ -1,15 +1,5 @@
 namespace Odysseus.Runner.Tests;
 
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Runner;
-using Odysseus.TestKit;
-
 /// <summary>
 /// The terminal a person starts a runner at, driven from a test without one.
 /// </summary>

@@ -1,19 +1,9 @@
 namespace Odysseus.Persistence;
 
-using System;
-using System.Collections.Generic;
 using System.Data.Common;
 using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 using Microsoft.Data.Sqlite;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 
 /// <summary>
 /// Projects and their audit trails, one SQLite database per project.
@@ -44,6 +34,17 @@ public sealed class SqliteProjectStore : IProjectStore, IAuditLog, ICandidateSto
 	{
 		Converters = { new TypedIdJsonConverter() },
 	};
+
+	private const string DeploymentColumns =
+		"Id, Candidate, Symbol, Volume, Status, StartedAt, StoppedAt, OrdersPlaced, Trades, " +
+		"RealizedProfit, Position, LastObservedAt, Note, Mode, ProcessId, SessionDays";
+
+	private const string RunColumns =
+		"Id, Candidate, Dataset, Slice, Window, Symbol, Scenario, Fingerprint, Status, Metrics, Trades, " +
+		"Equity, BarsProcessed, StartedAt, FinishedAt, Error, Diagnosis, Parameters";
+
+	private const string CandidateColumns =
+		"Id, Spec, Status, ClassName, SourceHash, AssemblyHash, Source, Assembly, TranslatorVersion, CreatedAt, UpdatedAt";
 
 	private readonly string _root;
 	private readonly Lock _sync = new();
@@ -274,48 +275,6 @@ public sealed class SqliteProjectStore : IProjectStore, IAuditLog, ICandidateSto
 		}
 	}
 
-	private async ValueTask<ResearchProject> ReadProjectAsync(ProjectId id, CancellationToken cancellationToken)
-	{
-		var database = Connect(id);
-
-		return await database.RunAsync(async (connection, token) =>
-		{
-			await using var command = connection.CreateCommand();
-
-			command.CommandText =
-				"""
-				SELECT Name, Status, CreatedAt, UpdatedAt, Dataset,
-				       MaxBacktests, MaxCandidates, MaxWallClockTicks,
-				       ClaimedBacktests, ClaimedCandidates, ClaimedWallClockTicks
-				FROM Projects WHERE Id = $id;
-				""";
-
-			command.Parameters.AddWithValue("$id", id.Value);
-
-			await using var reader = await command.ExecuteReaderAsync(token);
-
-			if (!await reader.ReadAsync(token))
-				return null;
-
-			return new ResearchProject
-			{
-				Id = id,
-				Name = reader.GetString(0),
-				Status = Enum.Parse<ProjectStatuses>(reader.GetString(1)),
-				CreatedAt = ParseMoment(reader.GetString(2)),
-				UpdatedAt = ParseMoment(reader.GetString(3)),
-				Dataset = reader.IsDBNull(4) ? default : DatasetId.Parse(reader.GetString(4)),
-				Budget = new(
-					reader.GetInt32(5),
-					reader.GetInt32(6),
-					TimeSpan.FromTicks(reader.GetInt64(7)),
-					reader.GetInt32(8),
-					reader.GetInt32(9),
-					TimeSpan.FromTicks(reader.GetInt64(10))),
-			};
-		}, cancellationToken);
-	}
-
 	/// <inheritdoc />
 	public async ValueTask<bool> TryClaimAsync(
 		ProjectId project,
@@ -425,48 +384,6 @@ public sealed class SqliteProjectStore : IProjectStore, IAuditLog, ICandidateSto
 		}, cancellationToken);
 	}
 
-	private static void Bind(DbCommand command, ResearchProject project)
-	{
-		Add(command, "$id", project.Id.Value);
-		Add(command, "$name", project.Name);
-		Add(command, "$status", project.Status.ToString());
-		Add(command, "$createdAt", Format(project.CreatedAt));
-		Add(command, "$updatedAt", Format(project.UpdatedAt));
-		Add(command, "$dataset", project.Dataset.IsEmpty ? DBNull.Value : project.Dataset.Value);
-		Add(command, "$maxBacktests", project.Budget.MaxBacktests);
-		Add(command, "$maxCandidates", project.Budget.MaxCandidates);
-		Add(command, "$maxWallClock", project.Budget.MaxWallClock.Ticks);
-		Add(command, "$claimedBacktests", project.Budget.ClaimedBacktests);
-		Add(command, "$claimedWallClock", project.Budget.ClaimedWallClock.Ticks);
-		Add(command, "$claimedCandidates", project.Budget.ClaimedCandidates);
-	}
-
-	private static void Add(DbCommand command, string name, object value)
-	{
-		var parameter = command.CreateParameter();
-
-		parameter.ParameterName = name;
-		parameter.Value = value;
-
-		command.Parameters.Add(parameter);
-	}
-
-	// Round-trip format, so a moment read back is the moment written and its kind is never guessed from
-	// the machine the project happens to be opened on.
-	private static string Format(DateTime moment)
-		=> moment.ToString("O", CultureInfo.InvariantCulture);
-
-	private static DateTime ParseMoment(string text)
-		=> DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).ToUniversalTime();
-
-	// Text rather than a floating column: a price or a size read back has to be the one written, and
-	// SQLite has no decimal of its own to keep it in.
-	private static string Format(decimal number)
-		=> number.ToString(CultureInfo.InvariantCulture);
-
-	private static decimal ParseNumber(string text)
-		=> decimal.Parse(text, CultureInfo.InvariantCulture);
-
 	/// <inheritdoc />
 	public async ValueTask AddAsync(ProjectId project, Candidate candidate, CancellationToken cancellationToken)
 	{
@@ -566,63 +483,6 @@ public sealed class SqliteProjectStore : IProjectStore, IAuditLog, ICandidateSto
 		}, cancellationToken);
 	}
 
-	private async ValueTask<Candidate> ReadCandidateAsync(
-		ProjectId project,
-		string where,
-		string value,
-		CancellationToken cancellationToken)
-	{
-		if (!Exists(project))
-			throw new ProjectNotFoundException(project);
-
-		var database = Connect(project);
-
-		return await database.RunAsync(async (connection, token) =>
-		{
-			await using var command = connection.CreateCommand();
-
-			// Oldest first, so a source hash that appears twice answers with the candidate that claimed it
-			// first. The later one is the copy, and pointing at it would move every result already filed
-			// under the original.
-			command.CommandText = $"SELECT {CandidateColumns} FROM Candidates WHERE {where} ORDER BY Sequence LIMIT 1;";
-
-			command.Parameters.AddWithValue("$value", value);
-
-			await using var reader = await command.ExecuteReaderAsync(token);
-
-			return await reader.ReadAsync(token) ? ReadCandidate(reader) : null;
-		}, cancellationToken);
-	}
-
-	private static Candidate ReadCandidate(DbDataReader reader)
-		=> new(
-			CandidateId.Parse(reader.GetString(0)),
-			SpecId.Parse(reader.GetString(1)),
-			Enum.Parse<CandidateStatuses>(reader.GetString(2)),
-			reader.GetString(3),
-			reader.GetString(4),
-			reader.GetString(5),
-			ArtifactId.Parse(reader.GetString(6)),
-			ArtifactId.Parse(reader.GetString(7)),
-			reader.GetString(8),
-			ParseMoment(reader.GetString(9)),
-			ParseMoment(reader.GetString(10)));
-
-	private static void Bind(SqliteCommand command, Candidate candidate)
-	{
-		command.Parameters.AddWithValue("$id", candidate.Id.Value);
-		command.Parameters.AddWithValue("$spec", candidate.Spec.Value);
-		command.Parameters.AddWithValue("$status", candidate.Status.ToString());
-		command.Parameters.AddWithValue("$className", candidate.ClassName);
-		command.Parameters.AddWithValue("$sourceHash", candidate.SourceHash);
-		command.Parameters.AddWithValue("$assemblyHash", candidate.AssemblyHash);
-		command.Parameters.AddWithValue("$source", candidate.Source.Value);
-		command.Parameters.AddWithValue("$assembly", candidate.Assembly.Value);
-		command.Parameters.AddWithValue("$translator", candidate.TranslatorVersion);
-		command.Parameters.AddWithValue("$createdAt", Format(candidate.CreatedAt));
-		command.Parameters.AddWithValue("$updatedAt", Format(candidate.UpdatedAt));
-	}
-
 	/// <inheritdoc />
 	public async ValueTask AddAsync(ProjectId project, RunResult run, CancellationToken cancellationToken)
 	{
@@ -713,31 +573,6 @@ public sealed class SqliteProjectStore : IProjectStore, IAuditLog, ICandidateSto
 		}, cancellationToken);
 	}
 
-	private async ValueTask<RunResult> ReadRunAsync(
-		ProjectId project,
-		string where,
-		string value,
-		CancellationToken cancellationToken)
-	{
-		if (!Exists(project))
-			throw new ProjectNotFoundException(project);
-
-		var database = Connect(project);
-
-		return await database.RunAsync(async (connection, token) =>
-		{
-			await using var command = connection.CreateCommand();
-
-			command.CommandText = $"SELECT {RunColumns} FROM Runs WHERE {where} ORDER BY Sequence LIMIT 1;";
-
-			command.Parameters.AddWithValue("$value", value);
-
-			await using var reader = await command.ExecuteReaderAsync(token);
-
-			return await reader.ReadAsync(token) ? ReadRun(reader) : null;
-		}, cancellationToken);
-	}
-
 	/// <inheritdoc />
 	public async ValueTask AddAsync(ProjectId project, Deployment deployment, CancellationToken cancellationToken)
 	{
@@ -815,104 +650,6 @@ public sealed class SqliteProjectStore : IProjectStore, IAuditLog, ICandidateSto
 			return ReadDeployment(reader);
 		}, cancellationToken);
 	}
-
-	// Explicit, because listing candidates takes the same arguments and differs only in what comes back.
-	async ValueTask<IReadOnlyList<Deployment>> IDeploymentStore.ListAsync(ProjectId project, CancellationToken cancellationToken)
-	{
-		var database = Connect(project);
-
-		return await database.RunAsync(async (connection, token) =>
-		{
-			await using var command = connection.CreateCommand();
-
-			command.CommandText = $"SELECT {DeploymentColumns} FROM Deployments ORDER BY Sequence DESC;";
-
-			await using var reader = await command.ExecuteReaderAsync(token);
-
-			var deployments = new List<Deployment>();
-
-			while (await reader.ReadAsync(token))
-				deployments.Add(ReadDeployment(reader));
-
-			return (IReadOnlyList<Deployment>)deployments;
-		}, cancellationToken);
-	}
-
-	private const string DeploymentColumns =
-		"Id, Candidate, Symbol, Volume, Status, StartedAt, StoppedAt, OrdersPlaced, Trades, " +
-		"RealizedProfit, Position, LastObservedAt, Note, Mode, ProcessId, SessionDays";
-
-	private static void Describe(SqliteCommand command, Deployment deployment)
-	{
-		command.Parameters.AddWithValue("$id", deployment.Id.Value);
-		command.Parameters.AddWithValue("$candidate", deployment.Candidate.Value);
-		command.Parameters.AddWithValue("$symbol", deployment.Symbol);
-		command.Parameters.AddWithValue("$volume", Format(deployment.Volume));
-		command.Parameters.AddWithValue("$status", deployment.Status.ToString());
-		command.Parameters.AddWithValue("$startedAt", Format(deployment.StartedAt));
-		command.Parameters.AddWithValue("$stoppedAt", deployment.StoppedAt is { } stopped ? Format(stopped) : DBNull.Value);
-		command.Parameters.AddWithValue("$orders", deployment.OrdersPlaced);
-		command.Parameters.AddWithValue("$trades", deployment.Trades);
-		command.Parameters.AddWithValue("$profit", Format(deployment.RealizedProfit));
-		command.Parameters.AddWithValue("$position", Format(deployment.Position));
-
-		command.Parameters.AddWithValue(
-			"$observedAt", deployment.LastObservedAt is { } observed ? Format(observed) : DBNull.Value);
-
-		command.Parameters.AddWithValue("$note", (object)deployment.Note ?? DBNull.Value);
-		command.Parameters.AddWithValue("$mode", deployment.Mode.ToString());
-		command.Parameters.AddWithValue("$processId", deployment.ProcessId);
-		command.Parameters.AddWithValue("$sessionDays", deployment.SessionDays);
-	}
-
-	/// <summary>
-	/// Reads one deployment.
-	/// </summary>
-	/// <param name="reader">The row.</param>
-	/// <returns>The deployment.</returns>
-	private static Deployment ReadDeployment(DbDataReader reader)
-		=> new(
-			DeploymentId.Parse(reader.GetString(0)),
-			CandidateId.Parse(reader.GetString(1)),
-			reader.GetString(2),
-			ParseNumber(reader.GetString(3)),
-			Enum.Parse<TradingModes>(reader.GetString(13)),
-			reader.GetInt32(14),
-			Enum.Parse<DeploymentStatuses>(reader.GetString(4)),
-			ParseMoment(reader.GetString(5)),
-			reader.IsDBNull(6) ? null : ParseMoment(reader.GetString(6)),
-			reader.GetInt32(7),
-			reader.GetInt32(8),
-			reader.GetInt32(15),
-			ParseNumber(reader.GetString(9)),
-			ParseNumber(reader.GetString(10)),
-			reader.IsDBNull(11) ? null : ParseMoment(reader.GetString(11)),
-			reader.IsDBNull(12) ? null : reader.GetString(12));
-
-	private static RunResult ReadRun(DbDataReader reader)
-		=> new(
-			RunId.Parse(reader.GetString(0)),
-			CandidateId.Parse(reader.GetString(1)),
-			DatasetId.Parse(reader.GetString(2)),
-			Enum.Parse<DataSlices>(reader.GetString(3)),
-			reader.GetInt32(4),
-			reader.GetString(5),
-			reader.GetString(6),
-			reader.GetString(7),
-			reader.IsDBNull(17) ? [] : JsonSerializer.Deserialize<Dictionary<string, decimal>>(reader.GetString(17), _json),
-			Enum.Parse<RunStatuses>(reader.GetString(8)),
-			reader.IsDBNull(9) ? null : JsonSerializer.Deserialize<RunMetrics>(reader.GetString(9), _json),
-			ArtifactId.Parse(reader.GetString(10)),
-			ArtifactId.Parse(reader.GetString(11)),
-			reader.GetInt32(12),
-			ParseMoment(reader.GetString(13)),
-			ParseMoment(reader.GetString(14)),
-			reader.IsDBNull(15) ? null : reader.GetString(15),
-			reader.IsDBNull(16) ? null : reader.GetString(16));
-
-	private const string RunColumns =
-		"Id, Candidate, Dataset, Slice, Window, Symbol, Scenario, Fingerprint, Status, Metrics, Trades, " +
-		"Equity, BarsProcessed, StartedAt, FinishedAt, Error, Diagnosis, Parameters";
 
 	/// <inheritdoc />
 	public async ValueTask AddAsync(
@@ -1041,35 +778,144 @@ public sealed class SqliteProjectStore : IProjectStore, IAuditLog, ICandidateSto
 		}, cancellationToken);
 	}
 
-	private const string CandidateColumns =
-		"Id, Spec, Status, ClassName, SourceHash, AssemblyHash, Source, Assembly, TranslatorVersion, CreatedAt, UpdatedAt";
-
-	private string FolderOf(ProjectId id)
-		=> Path.Combine(_root, id.Value);
-
-	private bool Exists(ProjectId id)
-		=> File.Exists(Path.Combine(FolderOf(id), DatabaseFileName));
-
-	private ProjectDatabase Connect(ProjectId id)
+	private static void Bind(DbCommand command, ResearchProject project)
 	{
-		using (_sync.EnterScope())
-		{
-			if (_databases.TryGetValue(id.Value, out var existing))
-				return existing;
-
-			Directory.CreateDirectory(FolderOf(id));
-
-			var connection = SqliteConnections.Open(Path.Combine(FolderOf(id), DatabaseFileName));
-
-			CreateSchema(connection);
-
-			var database = new ProjectDatabase(connection);
-
-			_databases.Add(id.Value, database);
-
-			return database;
-		}
+		Add(command, "$id", project.Id.Value);
+		Add(command, "$name", project.Name);
+		Add(command, "$status", project.Status.ToString());
+		Add(command, "$createdAt", Format(project.CreatedAt));
+		Add(command, "$updatedAt", Format(project.UpdatedAt));
+		Add(command, "$dataset", project.Dataset.IsEmpty ? DBNull.Value : project.Dataset.Value);
+		Add(command, "$maxBacktests", project.Budget.MaxBacktests);
+		Add(command, "$maxCandidates", project.Budget.MaxCandidates);
+		Add(command, "$maxWallClock", project.Budget.MaxWallClock.Ticks);
+		Add(command, "$claimedBacktests", project.Budget.ClaimedBacktests);
+		Add(command, "$claimedWallClock", project.Budget.ClaimedWallClock.Ticks);
+		Add(command, "$claimedCandidates", project.Budget.ClaimedCandidates);
 	}
+
+	private static void Add(DbCommand command, string name, object value)
+	{
+		var parameter = command.CreateParameter();
+
+		parameter.ParameterName = name;
+		parameter.Value = value;
+
+		command.Parameters.Add(parameter);
+	}
+
+	// Round-trip format, so a moment read back is the moment written and its kind is never guessed from
+	// the machine the project happens to be opened on.
+	private static string Format(DateTime moment)
+		=> moment.ToString("O", CultureInfo.InvariantCulture);
+
+	private static DateTime ParseMoment(string text)
+		=> DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).ToUniversalTime();
+
+	// Text rather than a floating column: a price or a size read back has to be the one written, and
+	// SQLite has no decimal of its own to keep it in.
+	private static string Format(decimal number)
+		=> number.ToString(CultureInfo.InvariantCulture);
+
+	private static decimal ParseNumber(string text)
+		=> decimal.Parse(text, CultureInfo.InvariantCulture);
+
+	private static Candidate ReadCandidate(DbDataReader reader)
+		=> new(
+			CandidateId.Parse(reader.GetString(0)),
+			SpecId.Parse(reader.GetString(1)),
+			Enum.Parse<CandidateStatuses>(reader.GetString(2)),
+			reader.GetString(3),
+			reader.GetString(4),
+			reader.GetString(5),
+			ArtifactId.Parse(reader.GetString(6)),
+			ArtifactId.Parse(reader.GetString(7)),
+			reader.GetString(8),
+			ParseMoment(reader.GetString(9)),
+			ParseMoment(reader.GetString(10)));
+
+	private static void Bind(SqliteCommand command, Candidate candidate)
+	{
+		command.Parameters.AddWithValue("$id", candidate.Id.Value);
+		command.Parameters.AddWithValue("$spec", candidate.Spec.Value);
+		command.Parameters.AddWithValue("$status", candidate.Status.ToString());
+		command.Parameters.AddWithValue("$className", candidate.ClassName);
+		command.Parameters.AddWithValue("$sourceHash", candidate.SourceHash);
+		command.Parameters.AddWithValue("$assemblyHash", candidate.AssemblyHash);
+		command.Parameters.AddWithValue("$source", candidate.Source.Value);
+		command.Parameters.AddWithValue("$assembly", candidate.Assembly.Value);
+		command.Parameters.AddWithValue("$translator", candidate.TranslatorVersion);
+		command.Parameters.AddWithValue("$createdAt", Format(candidate.CreatedAt));
+		command.Parameters.AddWithValue("$updatedAt", Format(candidate.UpdatedAt));
+	}
+
+	private static void Describe(SqliteCommand command, Deployment deployment)
+	{
+		command.Parameters.AddWithValue("$id", deployment.Id.Value);
+		command.Parameters.AddWithValue("$candidate", deployment.Candidate.Value);
+		command.Parameters.AddWithValue("$symbol", deployment.Symbol);
+		command.Parameters.AddWithValue("$volume", Format(deployment.Volume));
+		command.Parameters.AddWithValue("$status", deployment.Status.ToString());
+		command.Parameters.AddWithValue("$startedAt", Format(deployment.StartedAt));
+		command.Parameters.AddWithValue("$stoppedAt", deployment.StoppedAt is { } stopped ? Format(stopped) : DBNull.Value);
+		command.Parameters.AddWithValue("$orders", deployment.OrdersPlaced);
+		command.Parameters.AddWithValue("$trades", deployment.Trades);
+		command.Parameters.AddWithValue("$profit", Format(deployment.RealizedProfit));
+		command.Parameters.AddWithValue("$position", Format(deployment.Position));
+
+		command.Parameters.AddWithValue(
+			"$observedAt", deployment.LastObservedAt is { } observed ? Format(observed) : DBNull.Value);
+
+		command.Parameters.AddWithValue("$note", (object)deployment.Note ?? DBNull.Value);
+		command.Parameters.AddWithValue("$mode", deployment.Mode.ToString());
+		command.Parameters.AddWithValue("$processId", deployment.ProcessId);
+		command.Parameters.AddWithValue("$sessionDays", deployment.SessionDays);
+	}
+
+	/// <summary>
+	/// Reads one deployment.
+	/// </summary>
+	/// <param name="reader">The row.</param>
+	/// <returns>The deployment.</returns>
+	private static Deployment ReadDeployment(DbDataReader reader)
+		=> new(
+			DeploymentId.Parse(reader.GetString(0)),
+			CandidateId.Parse(reader.GetString(1)),
+			reader.GetString(2),
+			ParseNumber(reader.GetString(3)),
+			Enum.Parse<TradingModes>(reader.GetString(13)),
+			reader.GetInt32(14),
+			Enum.Parse<DeploymentStatuses>(reader.GetString(4)),
+			ParseMoment(reader.GetString(5)),
+			reader.IsDBNull(6) ? null : ParseMoment(reader.GetString(6)),
+			reader.GetInt32(7),
+			reader.GetInt32(8),
+			reader.GetInt32(15),
+			ParseNumber(reader.GetString(9)),
+			ParseNumber(reader.GetString(10)),
+			reader.IsDBNull(11) ? null : ParseMoment(reader.GetString(11)),
+			reader.IsDBNull(12) ? null : reader.GetString(12));
+
+	private static RunResult ReadRun(DbDataReader reader)
+		=> new(
+			RunId.Parse(reader.GetString(0)),
+			CandidateId.Parse(reader.GetString(1)),
+			DatasetId.Parse(reader.GetString(2)),
+			Enum.Parse<DataSlices>(reader.GetString(3)),
+			reader.GetInt32(4),
+			reader.GetString(5),
+			reader.GetString(6),
+			reader.GetString(7),
+			reader.IsDBNull(17) ? [] : JsonSerializer.Deserialize<Dictionary<string, decimal>>(reader.GetString(17), _json),
+			Enum.Parse<RunStatuses>(reader.GetString(8)),
+			reader.IsDBNull(9) ? null : JsonSerializer.Deserialize<RunMetrics>(reader.GetString(9), _json),
+			ArtifactId.Parse(reader.GetString(10)),
+			ArtifactId.Parse(reader.GetString(11)),
+			reader.GetInt32(12),
+			ParseMoment(reader.GetString(13)),
+			ParseMoment(reader.GetString(14)),
+			reader.IsDBNull(15) ? null : reader.GetString(15),
+			reader.IsDBNull(16) ? null : reader.GetString(16));
 
 	private static void CreateSchema(SqliteConnection connection)
 	{
@@ -1184,6 +1030,150 @@ public sealed class SqliteProjectStore : IProjectStore, IAuditLog, ICandidateSto
 			""";
 
 		command.ExecuteNonQuery();
+	}
+
+	private async ValueTask<ResearchProject> ReadProjectAsync(ProjectId id, CancellationToken cancellationToken)
+	{
+		var database = Connect(id);
+
+		return await database.RunAsync(async (connection, token) =>
+		{
+			await using var command = connection.CreateCommand();
+
+			command.CommandText =
+				"""
+				SELECT Name, Status, CreatedAt, UpdatedAt, Dataset,
+				       MaxBacktests, MaxCandidates, MaxWallClockTicks,
+				       ClaimedBacktests, ClaimedCandidates, ClaimedWallClockTicks
+				FROM Projects WHERE Id = $id;
+				""";
+
+			command.Parameters.AddWithValue("$id", id.Value);
+
+			await using var reader = await command.ExecuteReaderAsync(token);
+
+			if (!await reader.ReadAsync(token))
+				return null;
+
+			return new ResearchProject
+			{
+				Id = id,
+				Name = reader.GetString(0),
+				Status = Enum.Parse<ProjectStatuses>(reader.GetString(1)),
+				CreatedAt = ParseMoment(reader.GetString(2)),
+				UpdatedAt = ParseMoment(reader.GetString(3)),
+				Dataset = reader.IsDBNull(4) ? default : DatasetId.Parse(reader.GetString(4)),
+				Budget = new(
+					reader.GetInt32(5),
+					reader.GetInt32(6),
+					TimeSpan.FromTicks(reader.GetInt64(7)),
+					reader.GetInt32(8),
+					reader.GetInt32(9),
+					TimeSpan.FromTicks(reader.GetInt64(10))),
+			};
+		}, cancellationToken);
+	}
+
+	private async ValueTask<Candidate> ReadCandidateAsync(
+		ProjectId project,
+		string where,
+		string value,
+		CancellationToken cancellationToken)
+	{
+		if (!Exists(project))
+			throw new ProjectNotFoundException(project);
+
+		var database = Connect(project);
+
+		return await database.RunAsync(async (connection, token) =>
+		{
+			await using var command = connection.CreateCommand();
+
+			// Oldest first, so a source hash that appears twice answers with the candidate that claimed it
+			// first. The later one is the copy, and pointing at it would move every result already filed
+			// under the original.
+			command.CommandText = $"SELECT {CandidateColumns} FROM Candidates WHERE {where} ORDER BY Sequence LIMIT 1;";
+
+			command.Parameters.AddWithValue("$value", value);
+
+			await using var reader = await command.ExecuteReaderAsync(token);
+
+			return await reader.ReadAsync(token) ? ReadCandidate(reader) : null;
+		}, cancellationToken);
+	}
+
+	private async ValueTask<RunResult> ReadRunAsync(
+		ProjectId project,
+		string where,
+		string value,
+		CancellationToken cancellationToken)
+	{
+		if (!Exists(project))
+			throw new ProjectNotFoundException(project);
+
+		var database = Connect(project);
+
+		return await database.RunAsync(async (connection, token) =>
+		{
+			await using var command = connection.CreateCommand();
+
+			command.CommandText = $"SELECT {RunColumns} FROM Runs WHERE {where} ORDER BY Sequence LIMIT 1;";
+
+			command.Parameters.AddWithValue("$value", value);
+
+			await using var reader = await command.ExecuteReaderAsync(token);
+
+			return await reader.ReadAsync(token) ? ReadRun(reader) : null;
+		}, cancellationToken);
+	}
+
+	// Explicit, because listing candidates takes the same arguments and differs only in what comes back.
+	async ValueTask<IReadOnlyList<Deployment>> IDeploymentStore.ListAsync(ProjectId project, CancellationToken cancellationToken)
+	{
+		var database = Connect(project);
+
+		return await database.RunAsync(async (connection, token) =>
+		{
+			await using var command = connection.CreateCommand();
+
+			command.CommandText = $"SELECT {DeploymentColumns} FROM Deployments ORDER BY Sequence DESC;";
+
+			await using var reader = await command.ExecuteReaderAsync(token);
+
+			var deployments = new List<Deployment>();
+
+			while (await reader.ReadAsync(token))
+				deployments.Add(ReadDeployment(reader));
+
+			return (IReadOnlyList<Deployment>)deployments;
+		}, cancellationToken);
+	}
+
+	private string FolderOf(ProjectId id)
+		=> Path.Combine(_root, id.Value);
+
+	private bool Exists(ProjectId id)
+		=> File.Exists(Path.Combine(FolderOf(id), DatabaseFileName));
+
+	private ProjectDatabase Connect(ProjectId id)
+	{
+		using (_sync.EnterScope())
+		{
+			if (_databases.TryGetValue(id.Value, out var existing))
+				return existing;
+
+			Directory.CreateDirectory(FolderOf(id));
+
+			var connection = SqliteConnections.Open(Path.Combine(FolderOf(id), DatabaseFileName));
+
+			CreateSchema(connection);
+
+			var database = new ProjectDatabase(connection);
+
+			_databases.Add(id.Value, database);
+
+			return database;
+		}
 	}
 
 	/// <summary>

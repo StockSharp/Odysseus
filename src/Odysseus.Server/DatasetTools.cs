@@ -1,15 +1,5 @@
 namespace Odysseus.Server;
 
-using System.ComponentModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-using ModelContextProtocol.Server;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-
 /// <summary>
 /// The dataset tools an agent sees over MCP.
 /// </summary>

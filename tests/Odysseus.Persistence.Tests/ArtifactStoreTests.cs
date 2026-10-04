@@ -1,19 +1,10 @@
 namespace Odysseus.Persistence.Tests;
 
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Persistence;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The content-addressed artifact store. Everything the product claims about a candidate — this source
@@ -24,11 +15,10 @@ using Odysseus.TestKit;
 [TestClass]
 public class ArtifactStoreTests : OdysseusTestBase
 {
-	private string _root;
-	private FileArtifactStore _store;
-
 	// Every artifact belongs to a project, so the checks below work inside one.
 	private static readonly ProjectId _project = ProjectId.New();
+	private string _root;
+	private FileArtifactStore _store;
 
 	/// <summary>Creates a store over a temporary directory.</summary>
 	[TestInitialize]

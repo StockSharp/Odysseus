@@ -1,22 +1,12 @@
 namespace Odysseus.Server.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
 using Odysseus.Domain;
 using Odysseus.Persistence;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The paper-trading tools as an agent calls them: what each passes on to the deployment and what it
@@ -156,6 +146,15 @@ public class PaperToolsTests : OdysseusTestBase
 		AreEqual("this server's connector", throughServer.GetProperty("readThrough").GetString());
 	}
 
+	private static ToolGuard Guard()
+		=> new(NullLogger<ToolGuard>.Instance);
+
+	private static async Task<JsonElement> Answer(Task<object> call)
+		=> JsonSerializer.SerializeToElement(await call);
+
+	private static PaperAccountState State(string name)
+		=> new(DateTime.UtcNow, "stand-in", new(name, true, false, 100_000m, "USD"), [], []);
+
 	private async Task<(string Project, string Deployment)> DeployedAsync()
 	{
 		var created = await _projects.CreateProjectAsync("paper", Guid.NewGuid().ToString("n"), Actors.User, CancellationToken);
@@ -186,12 +185,6 @@ public class PaperToolsTests : OdysseusTestBase
 
 		return (created.Id.Value, answer.GetProperty("deploymentId").GetString());
 	}
-
-	private static ToolGuard Guard()
-		=> new(NullLogger<ToolGuard>.Instance);
-
-	private static async Task<JsonElement> Answer(Task<object> call)
-		=> JsonSerializer.SerializeToElement(await call);
 
 	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
 	private sealed class Builder : IStrategyBuilder
@@ -242,6 +235,9 @@ public class PaperToolsTests : OdysseusTestBase
 
 		public bool? AskedToClose { get; private set; }
 
+		private static RunnerState Trading
+			=> new(DateTime.UtcNow, RunnerPhases.Trading, TradingModes.Paper, true, 0, 0, 0, 0m, 0m, 0, AccountName, null, null);
+
 		public void Add(string deploymentId)
 			=> _states[deploymentId] = Trading;
 
@@ -272,11 +268,5 @@ public class PaperToolsTests : OdysseusTestBase
 		private RunnerHandle Handle(string deploymentId)
 			=> new(deploymentId, "prj", "cnd", RunnerStatuses.Attached, TradingModes.Paper, 24188, "stand-in", "home",
 				_states[deploymentId], "Connected and answering.");
-
-		private static RunnerState Trading
-			=> new(DateTime.UtcNow, RunnerPhases.Trading, TradingModes.Paper, true, 0, 0, 0, 0m, 0m, 0, AccountName, null, null);
 	}
-
-	private static PaperAccountState State(string name)
-		=> new(DateTime.UtcNow, "stand-in", new(name, true, false, 100_000m, "USD"), [], []);
 }

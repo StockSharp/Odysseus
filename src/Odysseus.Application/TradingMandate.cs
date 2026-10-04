@@ -1,13 +1,9 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-
-using Odysseus.Domain;
 
 /// <summary>
 /// Permission to trade real money, as an operator wrote it down.

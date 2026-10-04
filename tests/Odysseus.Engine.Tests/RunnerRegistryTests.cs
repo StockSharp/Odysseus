@@ -1,18 +1,7 @@
 namespace Odysseus.Engine.Tests;
 
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Engine;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The directory a deployment survives as, and the one file two servers race for.
@@ -172,9 +161,7 @@ public class RunnerRegistryTests : OdysseusTestBase
 		AreEqual(racers - 1, refused.Count, "somebody neither took the project nor was told why.");
 
 		foreach (var refusal in refused)
-		{
 			IsTrue(refusal.Message.Length > 0, "a refusal said nothing.");
-		}
 
 		AreEqual(1, Registry().Records().Count, "more than one runner was recorded against one project.");
 	}
@@ -334,8 +321,6 @@ public class RunnerRegistryTests : OdysseusTestBase
 		AreEqual(first.Directory, again.Directory);
 	}
 
-	private RunnerRegistry Registry() => new(_root, new Probe(_booted));
-
 	private static RunnerRecord Record(string deploymentId, int processId)
 		=> new(
 			RunnerHome.Schema,
@@ -355,6 +340,8 @@ public class RunnerRegistryTests : OdysseusTestBase
 			_started,
 			_booted,
 			_started);
+
+	private RunnerRegistry Registry() => new(_root, new Probe(_booted));
 
 	/// <summary>
 	/// A machine on which every recorded process is still there, so what these exercise is the claim

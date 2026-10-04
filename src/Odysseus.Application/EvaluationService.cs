@@ -1,12 +1,7 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Odysseus.Domain;
 using Odysseus.Spec;
 
 /// <summary>
@@ -100,6 +95,8 @@ public sealed record MeasurementResult(
 /// </remarks>
 public sealed class EvaluationService
 {
+	/// <summary>How many consecutive windows the development slice is cut into for walk-forward.</summary>
+	public const int WalkForwardWindows = 3;
 	private readonly IProjectStore _projects;
 	private readonly ICandidateStore _candidates;
 	private readonly ISpecStore _specs;
@@ -107,9 +104,6 @@ public sealed class EvaluationService
 	private readonly BacktestService _backtests;
 	private readonly IAuditLog _audit;
 	private readonly IClock _clock;
-
-	/// <summary>How many consecutive windows the development slice is cut into for walk-forward.</summary>
-	public const int WalkForwardWindows = 3;
 
 	/// <summary>
 	/// Creates the service.

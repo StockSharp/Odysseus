@@ -170,93 +170,109 @@ public static class Program
 		var position = 3m;
 		var stopped = false;
 
-		while (!cancellationToken.IsCancellationRequested)
+		var listening = Listen(plan);
+
+		try
 		{
-			using var pipe = new NamedPipeServerStream(
-				plan.Pipe, PipeDirection.InOut, 4, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-
-			try
+			while (!cancellationToken.IsCancellationRequested)
 			{
-				await pipe.WaitForConnectionAsync(cancellationToken);
-			}
-			catch (OperationCanceledException)
-			{
-				return;
-			}
-
-			try
-			{
-				await WorkerProtocol.WriteAsync(
-					pipe,
-					new RunnerHello(
-						protocol, engine, Environment.ProcessId, deployment, TradingModes.Paper,
-						"StockSharp.Stub 1.0.0", "stub-account", DateTime.UtcNow),
-					cancellationToken);
-
-				// Greeted and then nothing, which is what a runner stuck inside its own broker call looks
-				// like: the handshake succeeds and the first question never comes back.
-				if (behaviour == "greet-then-hang")
+				try
 				{
-					await Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
-
+					await listening.WaitForConnectionAsync(cancellationToken);
+				}
+				catch (OperationCanceledException)
+				{
 					return;
 				}
 
-				while (!cancellationToken.IsCancellationRequested)
+				// The next listener is opened before this connection is answered, as the runner itself does
+				// it, so that the name is never without one. On Unix a client that connected while there was
+				// nobody to hand it to is reset when the last listener goes, instead of being kept waiting.
+				await using var pipe = listening;
+
+				listening = Listen(plan);
+
+				try
 				{
-					var request = await WorkerProtocol.ReadAsync<RunnerRequest>(pipe, cancellationToken);
+					await WorkerProtocol.WriteAsync(
+						pipe,
+						new RunnerHello(
+							protocol, engine, Environment.ProcessId, deployment, TradingModes.Paper,
+							"StockSharp.Stub 1.0.0", "stub-account", DateTime.UtcNow),
+						cancellationToken);
 
-					if (request is null)
-						break;
-
-					if (!string.Equals(request.Token, plan.Token, StringComparison.Ordinal))
+					// Greeted and then nothing, which is what a runner stuck inside its own broker call looks
+					// like: the handshake succeeds and the first question never comes back.
+					if (behaviour == "greet-then-hang")
 					{
-						await WorkerProtocol.WriteAsync(
-							pipe,
-							new RunnerAnswer(request.Id, false, null, null, "The token does not match."),
-							cancellationToken);
-
-						break;
-					}
-
-					if (request.Command == RunnerCommands.Stop)
-					{
-						stopped = true;
-
-						if (request.ClosePosition)
-							position = 0m;
-
-						home.Append(new(
-							DateTime.UtcNow,
-							RunnerPhases.Stopped,
-							TradingModes.Paper,
-							position,
-							0,
-							2,
-							12.5m,
-							request.ClosePosition
-								? "Stopped, closing what it held."
-								: $"Stopped, leaving a position of {position} open at the broker."));
-					}
-
-					await WorkerProtocol.WriteAsync(pipe, Answer(request, position, stopped), cancellationToken);
-
-					if (stopped)
-					{
-						// An orderly exit removes the record, which is what tells a later session that this
-						// runner said goodbye rather than died.
-						home.DeleteRecord();
+						await Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
 
 						return;
 					}
+
+					while (!cancellationToken.IsCancellationRequested)
+					{
+						var request = await WorkerProtocol.ReadAsync<RunnerRequest>(pipe, cancellationToken);
+
+						if (request is null)
+							break;
+
+						if (!string.Equals(request.Token, plan.Token, StringComparison.Ordinal))
+						{
+							await WorkerProtocol.WriteAsync(
+								pipe,
+								new RunnerAnswer(request.Id, false, null, null, "The token does not match."),
+								cancellationToken);
+
+							break;
+						}
+
+						if (request.Command == RunnerCommands.Stop)
+						{
+							stopped = true;
+
+							if (request.ClosePosition)
+								position = 0m;
+
+							home.Append(new(
+								DateTime.UtcNow,
+								RunnerPhases.Stopped,
+								TradingModes.Paper,
+								position,
+								0,
+								2,
+								12.5m,
+								request.ClosePosition
+									? "Stopped, closing what it held."
+									: $"Stopped, leaving a position of {position} open at the broker."));
+						}
+
+						await WorkerProtocol.WriteAsync(pipe, Answer(request, position, stopped), cancellationToken);
+
+						if (stopped)
+						{
+							// An orderly exit removes the record, which is what tells a later session that this
+							// runner said goodbye rather than died.
+							home.DeleteRecord();
+
+							return;
+						}
+					}
+				}
+				catch (Exception error) when (error is IOException or OperationCanceledException)
+				{
+					// The client went away. Listen again.
 				}
 			}
-			catch (Exception error) when (error is IOException or OperationCanceledException)
-			{
-				// The client went away. Listen again.
-			}
+		}
+		finally
+		{
+			await listening.DisposeAsync();
 		}
 	}
+
+	private static NamedPipeServerStream Listen(RunnerPlan plan)
+		=> new(plan.Pipe, PipeDirection.InOut, 4, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
 
 	private static RunnerAnswer Answer(RunnerRequest request, decimal position, bool stopped)
 	{

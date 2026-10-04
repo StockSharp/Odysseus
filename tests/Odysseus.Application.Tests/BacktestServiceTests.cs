@@ -1,20 +1,11 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Engine;
 using Odysseus.Persistence;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// What a run costs, and what it costs when it does not happen.
@@ -30,88 +21,6 @@ using Odysseus.TestKit;
 public class BacktestServiceTests : OdysseusTestBase
 {
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 30, 0, DateTimeKind.Utc);
-
-	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
-	private sealed class Builder : IStrategyBuilder
-	{
-		public BuiltStrategy Build(StrategySpec spec)
-			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
-	}
-
-	/// <summary>A runner that can be told to give up the way a dropped client makes it give up.</summary>
-	private sealed class Runner : IBacktestRunner
-	{
-		public bool Cancel { get; set; }
-
-		public bool Fail { get; set; }
-
-		public IsolationFailures? Isolation { get; set; }
-
-		public int Runs { get; private set; }
-
-		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
-		{
-			Runs++;
-
-			if (Cancel)
-				throw new OperationCanceledException();
-
-			if (Fail)
-				throw new InvalidOperationException("the strategy threw on its first bar");
-
-			if (Isolation is { } kind)
-			{
-				throw new IsolationFailedException(kind, kind switch
-				{
-					IsolationFailures.Timeout => "The run was stopped after 5 minutes. Nothing was written.",
-					IsolationFailures.Memory => "The run was stopped after using more than 2048 MB. Nothing was written.",
-					IsolationFailures.Handshake => "The worker speaks protocol 2 and this server speaks 1.",
-					_ => "The worker exited without answering.",
-				});
-			}
-
-			var trades = new List<ExecutedTrade>();
-			var equity = new List<EquityPoint>();
-			var money = 100_000m;
-
-			for (var i = 0; i < 20; i++)
-			{
-				var entry = request.Bars.From.AddHours(i);
-
-				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
-					101m, 10m, 0.5m, 0.5m));
-
-				money += 10m;
-				equity.Add(new(entry.AddMinutes(25), money));
-			}
-
-			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 40));
-		}
-	}
-
-	/// <summary>
-	/// An artifact store that can be told to stop taking what it is given, which is what a full or
-	/// unwritable disk looks like from the service.
-	/// </summary>
-	private sealed class Store(IArtifactStore inner) : IArtifactStore
-	{
-		/// <summary>How many writes to let through before refusing every one after them.</summary>
-		public int Accept { get; set; } = int.MaxValue;
-
-		public ValueTask<ArtifactDescriptor> PutAsync(
-			ProjectId project,
-			ReadOnlyMemory<byte> content,
-			CancellationToken cancellationToken)
-			=> Accept-- > 0
-				? inner.PutAsync(project, content, cancellationToken)
-				: throw new IOException(@"C:\machine\odysseus\artifacts is not writable");
-
-		public ValueTask<byte[]> ReadAsync(ProjectId project, ArtifactId id, CancellationToken cancellationToken)
-			=> inner.ReadAsync(project, id, cancellationToken);
-
-		public ValueTask<bool> VerifyAsync(ProjectId project, ArtifactId id, CancellationToken cancellationToken)
-			=> inner.VerifyAsync(project, id, cancellationToken);
-	}
 
 	private string _root;
 	private SqliteProjectStore _store;
@@ -554,37 +463,6 @@ public class BacktestServiceTests : OdysseusTestBase
 		AreEqual(before, await RemainingAsync(project), "the refusal spent a backtest.");
 	}
 
-	private async Task<int> RemainingAsync(ProjectId project)
-	{
-		var existing = await _store.OpenAsync(project, CancellationToken);
-
-		return ResearchBudget.Restore(existing.Budget).RemainingBacktests;
-	}
-
-	private async Task<(ProjectId Project, CandidateId Candidate)> ReadyAsync()
-	{
-		var created = await _projects.CreateProjectAsync(
-			"budget", Guid.NewGuid().ToString("n"), Actors.User, CancellationToken);
-
-		var project = created.Id;
-
-		var bars = new Dictionary<string, IReadOnlyList<Candle>> { ["NVDA"] = Bars() };
-		var imported = DatasetBuilder.Build(bars, TimeSpan.FromMinutes(5), "test", isSynthetic: true);
-
-		await _datasets.SaveAsync(project, imported, CancellationToken);
-
-		var opened = await _store.OpenAsync(project, CancellationToken);
-
-		await _store.UpdateAsync(opened.WithDataset(imported.Manifest.Id, DateTime.UtcNow), CancellationToken);
-
-		var spec = await _specs.AddAsync(project, Spec(), Actors.Agent, DateTime.UtcNow, CancellationToken);
-
-		var built = await _candidates.BuildAsync(
-			project, spec.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
-
-		return (project, built.Id);
-	}
-
 	private static IReadOnlyList<Candle> Bars()
 	{
 		var bars = new List<Candle>();
@@ -628,4 +506,117 @@ public class BacktestServiceTests : OdysseusTestBase
 		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
 		}
 		""";
+
+	private async Task<int> RemainingAsync(ProjectId project)
+	{
+		var existing = await _store.OpenAsync(project, CancellationToken);
+
+		return ResearchBudget.Restore(existing.Budget).RemainingBacktests;
+	}
+
+	private async Task<(ProjectId Project, CandidateId Candidate)> ReadyAsync()
+	{
+		var created = await _projects.CreateProjectAsync(
+			"budget", Guid.NewGuid().ToString("n"), Actors.User, CancellationToken);
+
+		var project = created.Id;
+
+		var bars = new Dictionary<string, IReadOnlyList<Candle>> { ["NVDA"] = Bars() };
+		var imported = DatasetBuilder.Build(bars, TimeSpan.FromMinutes(5), "test", isSynthetic: true);
+
+		await _datasets.SaveAsync(project, imported, CancellationToken);
+
+		var opened = await _store.OpenAsync(project, CancellationToken);
+
+		await _store.UpdateAsync(opened.WithDataset(imported.Manifest.Id, DateTime.UtcNow), CancellationToken);
+
+		var spec = await _specs.AddAsync(project, Spec(), Actors.Agent, DateTime.UtcNow, CancellationToken);
+
+		var built = await _candidates.BuildAsync(
+			project, spec.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
+
+		return (project, built.Id);
+	}
+
+	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
+	private sealed class Builder : IStrategyBuilder
+	{
+		public BuiltStrategy Build(StrategySpec spec)
+			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
+	}
+
+	/// <summary>A runner that can be told to give up the way a dropped client makes it give up.</summary>
+	private sealed class Runner : IBacktestRunner
+	{
+		public bool Cancel { get; set; }
+
+		public bool Fail { get; set; }
+
+		public IsolationFailures? Isolation { get; set; }
+
+		public int Runs { get; private set; }
+
+		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
+		{
+			Runs++;
+
+			if (Cancel)
+				throw new OperationCanceledException();
+
+			if (Fail)
+				throw new InvalidOperationException("the strategy threw on its first bar");
+
+			if (Isolation is { } kind)
+			{
+				throw new IsolationFailedException(kind, kind switch
+				{
+					IsolationFailures.Timeout => "The run was stopped after 5 minutes. Nothing was written.",
+					IsolationFailures.Memory => "The run was stopped after using more than 2048 MB. Nothing was written.",
+					IsolationFailures.Handshake => "The worker speaks protocol 2 and this server speaks 1.",
+					_ => "The worker exited without answering.",
+				});
+			}
+
+			var trades = new List<ExecutedTrade>();
+			var equity = new List<EquityPoint>();
+			var money = 100_000m;
+
+			for (var i = 0; i < 20; i++)
+			{
+				var entry = request.Bars.From.AddHours(i);
+
+				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
+					101m, 10m, 0.5m, 0.5m));
+
+				money += 10m;
+				equity.Add(new(entry.AddMinutes(25), money));
+			}
+
+			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 40));
+		}
+	}
+
+	/// <summary>
+	/// An artifact store that can be told to stop taking what it is given, which is what a full or
+	/// unwritable disk looks like from the service.
+	/// </summary>
+	private sealed class Store(IArtifactStore inner) : IArtifactStore
+	{
+		/// <summary>How many writes to let through before refusing every one after them.</summary>
+		public int Accept { get; set; } = int.MaxValue;
+
+		public ValueTask<ArtifactDescriptor> PutAsync(
+			ProjectId project,
+			ReadOnlyMemory<byte> content,
+			CancellationToken cancellationToken)
+			=> Accept-- > 0
+				? inner.PutAsync(project, content, cancellationToken)
+				: throw new IOException(@"C:\machine\odysseus\artifacts is not writable");
+
+		public ValueTask<byte[]> ReadAsync(ProjectId project, ArtifactId id, CancellationToken cancellationToken)
+			=> inner.ReadAsync(project, id, cancellationToken);
+
+		public ValueTask<bool> VerifyAsync(ProjectId project, ArtifactId id, CancellationToken cancellationToken)
+			=> inner.VerifyAsync(project, id, cancellationToken);
+	}
 }

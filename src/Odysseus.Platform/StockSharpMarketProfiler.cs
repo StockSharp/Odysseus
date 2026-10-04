@@ -1,13 +1,6 @@
 namespace Odysseus.Platform;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using StockSharp.Messages;
-
 using Odysseus.Application;
-using Odysseus.Domain;
 
 using CoreMarketProfiler = StockSharp.Algo.Candles.MarketProfiler;
 using CoreSessionParts = StockSharp.Algo.Candles.SessionParts;

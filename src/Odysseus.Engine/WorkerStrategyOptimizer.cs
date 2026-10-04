@@ -1,11 +1,6 @@
 namespace Odysseus.Engine;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
-
-using Odysseus.Application;
 
 /// <summary>
 /// Searches a candidate's declared numbers in the isolated worker.

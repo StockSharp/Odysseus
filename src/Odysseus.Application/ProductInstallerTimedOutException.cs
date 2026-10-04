@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// Raised when the installer console overran the time it is allowed and was stopped.
 /// </summary>

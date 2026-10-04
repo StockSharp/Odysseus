@@ -1,15 +1,7 @@
 namespace Odysseus.Broker;
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-
-using Ecng.Common;
-
-using StockSharp.Messages;
-
-using Odysseus.Application;
 
 /// <summary>
 /// What adapters an assembly holds.

@@ -1,15 +1,6 @@
 namespace Odysseus.Server.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
 using Odysseus.Broker;
-using Odysseus.TestKit;
 
 /// <summary>
 /// How this server reads the decisions it is started with.

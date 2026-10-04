@@ -1,12 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// One recorded version of a strategy specification.
 /// </summary>

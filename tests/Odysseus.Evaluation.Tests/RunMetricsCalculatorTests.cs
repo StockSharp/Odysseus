@@ -1,14 +1,6 @@
 namespace Odysseus.Evaluation.Tests;
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.Evaluation;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Turning what a run did into the numbers a verdict is read from.

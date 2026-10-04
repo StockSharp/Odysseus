@@ -1,11 +1,6 @@
 namespace Odysseus.Packages;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 using NuGet.Protocol;
-using NuGet.Protocol.Core.Types;
 
 /// <summary>
 /// Where packages are downloaded from, stated rather than discovered.
@@ -46,6 +41,12 @@ public sealed class PackageSourceSet
 		_repositories = [.. named.Select(s => Repository.Factory.GetCoreV3(s))];
 	}
 
+	/// <summary>The sources as they were named.</summary>
+	public IReadOnlyList<string> Sources { get; }
+
+	/// <summary>The sources as repositories, in the order they are tried.</summary>
+	internal IReadOnlyList<SourceRepository> Repositories => _repositories;
+
 	/// <summary>
 	/// Reads the set from a delimited list, falling back to the public gallery.
 	/// </summary>
@@ -58,10 +59,4 @@ public sealed class PackageSourceSet
 
 		return new(list.Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 	}
-
-	/// <summary>The sources as they were named.</summary>
-	public IReadOnlyList<string> Sources { get; }
-
-	/// <summary>The sources as repositories, in the order they are tried.</summary>
-	internal IReadOnlyList<SourceRepository> Repositories => _repositories;
 }

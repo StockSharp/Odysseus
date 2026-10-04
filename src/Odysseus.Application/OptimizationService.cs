@@ -1,14 +1,9 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Odysseus.Domain;
 using Odysseus.Evaluation;
 using Odysseus.Spec;
 
@@ -70,6 +65,11 @@ public sealed record OptimizationOutcome(
 /// </remarks>
 public sealed class OptimizationService
 {
+	/// <summary>Settings that live in one generation.</summary>
+	public const int Population = 10;
+
+	/// <summary>Generations the search runs before it stops.</summary>
+	public const int Generations = 5;
 	private readonly IProjectStore _projects;
 	private readonly ICandidateStore _candidates;
 	private readonly ISpecStore _specs;
@@ -80,12 +80,6 @@ public sealed class OptimizationService
 	private readonly IAuditLog _audit;
 	private readonly IOperationLog _operations;
 	private readonly IClock _clock;
-
-	/// <summary>Settings that live in one generation.</summary>
-	public const int Population = 10;
-
-	/// <summary>Generations the search runs before it stops.</summary>
-	public const int Generations = 5;
 
 	/// <summary>
 	/// Creates the service.

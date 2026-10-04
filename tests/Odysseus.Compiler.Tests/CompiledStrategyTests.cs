@@ -8,8 +8,6 @@ using System.Reflection;
 
 using StockSharp.Algo.Strategies;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using Odysseus.CodeGen;
 using Odysseus.Compiler;
 using Odysseus.Platform;

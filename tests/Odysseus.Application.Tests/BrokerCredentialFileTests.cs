@@ -1,10 +1,5 @@
 namespace Odysseus.Application.Tests;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Reading the file the broker credentials live in.
 /// </summary>

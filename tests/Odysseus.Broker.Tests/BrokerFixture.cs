@@ -1,11 +1,6 @@
 namespace Odysseus.Broker.Tests;
 
-using System;
 using System.IO;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
 
 /// <summary>
 /// What the suites that need a real broker are given, and how they decline when there is none.
@@ -17,6 +12,9 @@ using Odysseus.Application;
 /// </remarks>
 public static class BrokerFixture
 {
+	private const string ServerSource = "https://api.nuget.org/v3/index.json";
+	private const string AllowedPrefix = "StockSharp.";
+
 	/// <summary>
 	/// Reads the connector the environment names, or declares the calling suite inapplicable.
 	/// </summary>
@@ -69,7 +67,4 @@ public static class BrokerFixture
 			[AllowedPrefix],
 			TradingMandate.Paper);
 	}
-
-	private const string ServerSource = "https://api.nuget.org/v3/index.json";
-	private const string AllowedPrefix = "StockSharp.";
 }

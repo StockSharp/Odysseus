@@ -1,12 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// What the server can tell a connecting agent about itself.
 /// </summary>
@@ -27,13 +20,12 @@ public sealed record ServerDescription(
 /// </remarks>
 public sealed class ProjectService
 {
-	private readonly IProjectStore _projects;
-	private readonly IAuditLog _audit;
-	private readonly IOperationLog _operations;
-
 	// Creating a project cannot belong to a project, so it belongs to the installation. Renaming and
 	// every later step name their own project instead.
 	private const string ServerScope = "server";
+	private readonly IProjectStore _projects;
+	private readonly IAuditLog _audit;
+	private readonly IOperationLog _operations;
 	private readonly IClock _clock;
 	private readonly ServerModes _mode;
 	private readonly ResearchBudgetState _defaultBudget;

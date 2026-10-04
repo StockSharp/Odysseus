@@ -1,12 +1,6 @@
 namespace Odysseus.Domain.Tests;
 
-using System;
 using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The candidate lifecycle. The order of stages is what makes the numbers mean anything: a candidate

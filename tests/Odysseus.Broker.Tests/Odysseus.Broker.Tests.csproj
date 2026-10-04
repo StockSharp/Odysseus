@@ -6,10 +6,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<!--
 		The trading platform arrives transitively through the broker adapter. Declaring it here would be
 		a second project compiled against StockSharp, which the dependency rules refuse: the platform is

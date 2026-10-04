@@ -1,21 +1,10 @@
 namespace Odysseus.Runner.Tests;
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Engine;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The runner as a process, asked for the phrase of a live mandate by a test that cannot type.
@@ -339,6 +328,83 @@ public class RunnerConsoleTests : OdysseusTestBase
 		}
 	}
 
+	/// <summary>
+	/// Whether the runner started in a console group of its own is gone within a deadline.
+	/// </summary>
+	/// <param name="runner">The runner.</param>
+	/// <param name="deadline">How long to wait.</param>
+	/// <returns><see langword="true"/> when it exited inside the deadline.</returns>
+	private static Task<bool> Exited(ConsoleChild runner, TimeSpan deadline)
+		=> Task.Run(() => runner.Wait(deadline));
+
+	/// <summary>
+	/// Where the runner was built. Reached by path rather than by reference, which is the whole point of
+	/// a runner being a process of its own.
+	/// </summary>
+	/// <returns>The executable, or <see langword="null"/> when it has not been built.</returns>
+	private static string Built()
+	{
+		var configuration = AppContext.BaseDirectory.Contains(
+			$"{Path.DirectorySeparatorChar}Debug{Path.DirectorySeparatorChar}",
+			StringComparison.OrdinalIgnoreCase)
+			? "Debug"
+			: "Release";
+
+		var candidate = Path.Combine(
+			RepositoryRoot, "src", "Odysseus.Runner", "bin", configuration, "net10.0",
+			OperatingSystem.IsWindows() ? "Odysseus.Runner.exe" : "Odysseus.Runner");
+
+		return File.Exists(candidate) ? candidate : null;
+	}
+
+	/// <summary>
+	/// Whether this process is attached to a console at all.
+	/// </summary>
+	/// <returns><see langword="true"/> when it has one.</returns>
+	/// <remarks>
+	/// Asked by counting who is attached rather than by looking for a window, because a test host is
+	/// usually started without one: a console with no window is still a console, and is still both a
+	/// terminal a child can inherit and something an interrupt can happen on.
+	/// </remarks>
+	private static bool HasConsole()
+		=> GetConsoleProcessList(new int[1], 1) > 0;
+
+	[DllImport("kernel32.dll", EntryPoint = "CreateProcessW", CharSet = CharSet.Unicode, SetLastError = true)]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static extern bool CreateProcess(
+		string applicationName,
+		StringBuilder commandLine,
+		IntPtr processAttributes,
+		IntPtr threadAttributes,
+		[MarshalAs(UnmanagedType.Bool)] bool inheritHandles,
+		int creationFlags,
+		IntPtr environment,
+		string currentDirectory,
+		ref StartupInfo startupInfo,
+		out ProcessInformation information);
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static extern bool GenerateConsoleCtrlEvent(int controlEvent, int processGroupId);
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern int GetConsoleProcessList(int[] processList, int count);
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern int WaitForSingleObject(IntPtr handle, int milliseconds);
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static extern bool GetExitCodeProcess(IntPtr handle, out int exitCode);
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static extern bool TerminateProcess(IntPtr handle, int exitCode);
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	private static extern bool CloseHandle(IntPtr handle);
+
 	/// <summary>Waits until the runner has written down how to find it, which it does before it asks.</summary>
 	/// <param name="home">The runner's home.</param>
 	private async Task Recorded(RunnerHome home)
@@ -394,15 +460,6 @@ public class RunnerConsoleTests : OdysseusTestBase
 			return false;
 		}
 	}
-
-	/// <summary>
-	/// Whether the runner started in a console group of its own is gone within a deadline.
-	/// </summary>
-	/// <param name="runner">The runner.</param>
-	/// <param name="deadline">How long to wait.</param>
-	/// <returns><see langword="true"/> when it exited inside the deadline.</returns>
-	private static Task<bool> Exited(ConsoleChild runner, TimeSpan deadline)
-		=> Task.Run(() => runner.Wait(deadline));
 
 	/// <summary>
 	/// Writes a home the runner can be started against, with a plan the mandate covers.
@@ -478,26 +535,6 @@ public class RunnerConsoleTests : OdysseusTestBase
 		_mandate = path;
 
 		return path;
-	}
-
-	/// <summary>
-	/// Where the runner was built. Reached by path rather than by reference, which is the whole point of
-	/// a runner being a process of its own.
-	/// </summary>
-	/// <returns>The executable, or <see langword="null"/> when it has not been built.</returns>
-	private static string Built()
-	{
-		var configuration = AppContext.BaseDirectory.Contains(
-			$"{Path.DirectorySeparatorChar}Debug{Path.DirectorySeparatorChar}",
-			StringComparison.OrdinalIgnoreCase)
-			? "Debug"
-			: "Release";
-
-		var candidate = Path.Combine(
-			RepositoryRoot, "src", "Odysseus.Runner", "bin", configuration, "net10.0",
-			OperatingSystem.IsWindows() ? "Odysseus.Runner.exe" : "Odysseus.Runner");
-
-		return File.Exists(candidate) ? candidate : null;
 	}
 
 	/// <summary>
@@ -596,18 +633,6 @@ public class RunnerConsoleTests : OdysseusTestBase
 			Marshal.FreeHGlobal(environment);
 		}
 	}
-
-	/// <summary>
-	/// Whether this process is attached to a console at all.
-	/// </summary>
-	/// <returns><see langword="true"/> when it has one.</returns>
-	/// <remarks>
-	/// Asked by counting who is attached rather than by looking for a window, because a test host is
-	/// usually started without one: a console with no window is still a console, and is still both a
-	/// terminal a child can inherit and something an interrupt can happen on.
-	/// </remarks>
-	private static bool HasConsole()
-		=> GetConsoleProcessList(new int[1], 1) > 0;
 
 	/// <summary>
 	/// The environment such a runner is given, as Windows wants it: this process's own plus the mandate,
@@ -720,40 +745,4 @@ public class RunnerConsoleTests : OdysseusTestBase
 		{
 		}
 	}
-
-	[DllImport("kernel32.dll", EntryPoint = "CreateProcessW", CharSet = CharSet.Unicode, SetLastError = true)]
-	[return: MarshalAs(UnmanagedType.Bool)]
-	private static extern bool CreateProcess(
-		string applicationName,
-		StringBuilder commandLine,
-		IntPtr processAttributes,
-		IntPtr threadAttributes,
-		[MarshalAs(UnmanagedType.Bool)] bool inheritHandles,
-		int creationFlags,
-		IntPtr environment,
-		string currentDirectory,
-		ref StartupInfo startupInfo,
-		out ProcessInformation information);
-
-	[DllImport("kernel32.dll", SetLastError = true)]
-	[return: MarshalAs(UnmanagedType.Bool)]
-	private static extern bool GenerateConsoleCtrlEvent(int controlEvent, int processGroupId);
-
-	[DllImport("kernel32.dll", SetLastError = true)]
-	private static extern int GetConsoleProcessList(int[] processList, int count);
-
-	[DllImport("kernel32.dll", SetLastError = true)]
-	private static extern int WaitForSingleObject(IntPtr handle, int milliseconds);
-
-	[DllImport("kernel32.dll", SetLastError = true)]
-	[return: MarshalAs(UnmanagedType.Bool)]
-	private static extern bool GetExitCodeProcess(IntPtr handle, out int exitCode);
-
-	[DllImport("kernel32.dll", SetLastError = true)]
-	[return: MarshalAs(UnmanagedType.Bool)]
-	private static extern bool TerminateProcess(IntPtr handle, int exitCode);
-
-	[DllImport("kernel32.dll", SetLastError = true)]
-	[return: MarshalAs(UnmanagedType.Bool)]
-	private static extern bool CloseHandle(IntPtr handle);
 }

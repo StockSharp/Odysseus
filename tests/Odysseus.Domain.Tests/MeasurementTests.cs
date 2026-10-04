@@ -1,12 +1,6 @@
 namespace Odysseus.Domain.Tests;
 
-using System;
 using System.Collections.Generic;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The arithmetic a measurement does over its own runs.

@@ -1,12 +1,5 @@
 namespace Odysseus.Engine.Tests;
 
-using System;
-using System.IO;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.TestKit;
-
 /// <summary>
 /// What names a platform build, and what happens when nothing does.
 /// </summary>
@@ -176,6 +169,9 @@ public class EngineIdentityTests : OdysseusTestBase
 		AreEqual(string.Empty, EngineIdentity.Of(_folder));
 	}
 
+	private static void Deploy(string folder, string name, string content)
+		=> File.WriteAllText(Path.Combine(folder, name), content);
+
 	private string Folder(string name)
 	{
 		var folder = Path.Combine(_root, name);
@@ -184,7 +180,4 @@ public class EngineIdentityTests : OdysseusTestBase
 
 		return folder;
 	}
-
-	private static void Deploy(string folder, string name, string content)
-		=> File.WriteAllText(Path.Combine(folder, name), content);
 }

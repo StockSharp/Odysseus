@@ -1,16 +1,6 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Persistence;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The project use cases the MCP tools sit on. The caller is an autonomous agent over a connection

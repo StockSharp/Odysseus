@@ -1,13 +1,7 @@
 namespace Odysseus.Products.Tests;
 
-using System;
 using System.Globalization;
 using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Products;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Reading what the installer console printed.
@@ -26,14 +20,14 @@ using Odysseus.TestKit;
 [TestClass]
 public class InstallerOutputTests : OdysseusTestBase
 {
-	private const string _prefix = "14:22:33.123 | Application     | ";
+	private const string Prefix = "14:22:33.123 | Application     | ";
 
 	/// <summary>An entry is read into a product, field by field.</summary>
 	[TestMethod]
 	public void AnEntryIsReadIntoAProduct()
 	{
 		var reading = InstallerOutput.Read(
-			_prefix + "id=9, package_id=StockSharp.Designer: (StandaloneApp) \"Designer\"");
+			Prefix + "id=9, package_id=StockSharp.Designer: (StandaloneApp) \"Designer\"");
 
 		AreEqual(1, reading.Products.Count, Describe(reading));
 
@@ -55,7 +49,7 @@ public class InstallerOutputTests : OdysseusTestBase
 	public void AnInstalledEntryCarriesItsDirectoryAndItsUpdate()
 	{
 		var reading = InstallerOutput.Read(
-			_prefix + @"id=10, package_id=StockSharp.Terminal: (StandaloneApp) ""Terminal"" dir='c:\apps\terminal', updates=5.0.9");
+			Prefix + @"id=10, package_id=StockSharp.Terminal: (StandaloneApp) ""Terminal"" dir='c:\apps\terminal', updates=5.0.9");
 
 		AreEqual(1, reading.Products.Count, Describe(reading));
 
@@ -76,7 +70,7 @@ public class InstallerOutputTests : OdysseusTestBase
 	{
 		var reading = InstallerOutput.Read(string.Join(
 			Environment.NewLine,
-			_prefix + "Products:",
+			Prefix + "Products:",
 			"id=9, package_id=StockSharp.Designer: (StandaloneApp) \"Designer\"",
 			"id=10, package_id=StockSharp.Terminal: (StandaloneApp) \"Terminal\"",
 			"id=8, package_id=StockSharp.Hydra: (StandaloneApp) \"Hydra\""));
@@ -106,7 +100,7 @@ public class InstallerOutputTests : OdysseusTestBase
 			"No updates found.",
 		})
 		{
-			var reading = InstallerOutput.Read(_prefix + sentence);
+			var reading = InstallerOutput.Read(Prefix + sentence);
 
 			AreEqual(0, reading.Products.Count, sentence);
 			AreEqual(0, reading.Unparsed.Count, $"'{sentence}' came back as text: " + Describe(reading));
@@ -136,8 +130,8 @@ public class InstallerOutputTests : OdysseusTestBase
 	{
 		var reading = InstallerOutput.Read(string.Join(
 			Environment.NewLine,
-			_prefix + "STATUS: downloading StockSharp.Designer 5.0.9",
-			_prefix + "Product 4242 not found.",
+			Prefix + "STATUS: downloading StockSharp.Designer 5.0.9",
+			Prefix + "Product 4242 not found.",
 			"Press any key to continue"));
 
 		AreEqual(0, reading.Products.Count, Describe(reading));
@@ -167,7 +161,7 @@ public class InstallerOutputTests : OdysseusTestBase
 			"id=9, package_id=StockSharp.Designer (StandaloneApp) \"Designer\"",
 		})
 		{
-			var reading = InstallerOutput.Read(_prefix + line);
+			var reading = InstallerOutput.Read(Prefix + line);
 
 			AreEqual(0, reading.Products.Count, $"'{line}' was read as a product.");
 			AreEqual(1, reading.Unparsed.Count, $"'{line}' was dropped instead of being handed back.");
@@ -184,7 +178,7 @@ public class InstallerOutputTests : OdysseusTestBase
 	{
 		var line = "id=999999999999999999999999, package_id=StockSharp.Huge: (StandaloneApp) \"Huge\"";
 
-		var reading = InstallerOutput.Read(_prefix + line);
+		var reading = InstallerOutput.Read(Prefix + line);
 
 		AreEqual(0, reading.Products.Count);
 		AreEqual(1, reading.Unparsed.Count, Describe(reading));
@@ -195,7 +189,7 @@ public class InstallerOutputTests : OdysseusTestBase
 	[TestMethod]
 	public void AnEmptyNameIsStillAnEntry()
 	{
-		var reading = InstallerOutput.Read(_prefix + "id=7, package_id=StockSharp.Nameless: () \"\"");
+		var reading = InstallerOutput.Read(Prefix + "id=7, package_id=StockSharp.Nameless: () \"\"");
 
 		AreEqual(1, reading.Products.Count, Describe(reading));
 		AreEqual(string.Empty, reading.Products[0].Name);
@@ -211,7 +205,7 @@ public class InstallerOutputTests : OdysseusTestBase
 	{
 		AreEqual("A1B2C3D4", InstallerOutput.HardwareId("Hardware ID: A1B2C3D4"));
 		AreEqual("A1B2C3D4", InstallerOutput.HardwareId("Hardware ID: A1B2C3D4\r\n"));
-		AreEqual("A1B2C3D4", InstallerOutput.HardwareId(_prefix + "Hardware ID: A1B2C3D4"));
+		AreEqual("A1B2C3D4", InstallerOutput.HardwareId(Prefix + "Hardware ID: A1B2C3D4"));
 
 		// Escape sequences, in case the program ever decides it is talking to a terminal.
 		AreEqual("A1B2C3D4", InstallerOutput.HardwareId("Hardware ID: \u001b[38;5;208mA1B2C3D4\u001b[0m"));
@@ -226,7 +220,7 @@ public class InstallerOutputTests : OdysseusTestBase
 	{
 		AreEqual(string.Empty, InstallerOutput.HardwareId(null));
 		AreEqual(string.Empty, InstallerOutput.HardwareId(string.Empty));
-		AreEqual(string.Empty, InstallerOutput.HardwareId(_prefix + "System.InvalidOperationException: no."));
+		AreEqual(string.Empty, InstallerOutput.HardwareId(Prefix + "System.InvalidOperationException: no."));
 		AreEqual(string.Empty, InstallerOutput.HardwareId("Hardware ID:    "),
 			"a label with nothing after it was read as an identifier.");
 	}
@@ -241,7 +235,7 @@ public class InstallerOutputTests : OdysseusTestBase
 		IsTrue(InstallerOutput.NamesAForeignInstaller(
 			"Application is already running. Following processes must be closed: StockSharp.Installer.UI.exe (id=42)"));
 
-		IsTrue(InstallerOutput.NamesAForeignInstaller(_prefix + "installer is already running. trying to stop..."));
+		IsTrue(InstallerOutput.NamesAForeignInstaller(Prefix + "installer is already running. trying to stop..."));
 
 		IsFalse(InstallerOutput.NamesAForeignInstaller("Product 4242 not found."));
 		IsFalse(InstallerOutput.NamesAForeignInstaller(null));

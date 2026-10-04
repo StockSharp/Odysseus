@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// One stretch of closed history that has been spent.
 /// </summary>

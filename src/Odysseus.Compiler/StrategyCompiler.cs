@@ -1,14 +1,8 @@
 namespace Odysseus.Compiler;
 
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 
 /// <summary>
 /// One thing the compiler had to say about the source.
@@ -150,6 +144,18 @@ public sealed class StrategyCompiler
 		return StrategyRules.Inspect(compilation, tree);
 	}
 
+	private static CompilerMessage Describe(Diagnostic diagnostic)
+	{
+		var position = diagnostic.Location.GetLineSpan().StartLinePosition;
+
+		return new(
+			diagnostic.Id,
+			diagnostic.Severity.ToString(),
+			diagnostic.GetMessage(),
+			position.Line + 1,
+			position.Character + 1);
+	}
+
 	private (CSharpCompilation Compilation, SyntaxTree Tree) Prepare(string source, string assemblyName)
 	{
 		var tree = CSharpSyntaxTree.ParseText(
@@ -170,17 +176,5 @@ public sealed class StrategyCompiler
 				allowUnsafe: false));
 
 		return (compilation, tree);
-	}
-
-	private static CompilerMessage Describe(Diagnostic diagnostic)
-	{
-		var position = diagnostic.Location.GetLineSpan().StartLinePosition;
-
-		return new(
-			diagnostic.Id,
-			diagnostic.Severity.ToString(),
-			diagnostic.GetMessage(),
-			position.Line + 1,
-			position.Character + 1);
 	}
 }

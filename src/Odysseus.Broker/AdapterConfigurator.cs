@@ -1,17 +1,9 @@
 namespace Odysseus.Broker;
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
 using System.Security;
-
-using Ecng.Common;
-
-using StockSharp.Messages;
-
-using Odysseus.Application;
 
 /// <summary>
 /// Reads what an adapter declares, and configures one from what the caller asked for.

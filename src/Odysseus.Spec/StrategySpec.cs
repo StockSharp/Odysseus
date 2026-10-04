@@ -1,7 +1,5 @@
 namespace Odysseus.Spec;
 
-using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 using Odysseus.Domain;

@@ -1,9 +1,5 @@
 namespace Odysseus.Packages;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 
 /// <summary>
@@ -35,6 +31,18 @@ public sealed class PackageCache
 
 	/// <summary>Directory the folders live under.</summary>
 	public string Root => _root;
+
+	/// <summary>
+	/// The hash a package file is filed under.
+	/// </summary>
+	/// <param name="content">The package file.</param>
+	/// <returns>Its SHA-256, in lower-case hexadecimal.</returns>
+	public static string HashOf(byte[] content)
+	{
+		ArgumentNullException.ThrowIfNull(content);
+
+		return Convert.ToHexStringLower(SHA256.HashData(content));
+	}
 
 	/// <summary>
 	/// Where one package and version is kept.
@@ -121,16 +129,4 @@ public sealed class PackageCache
 	/// <returns>The versions, newest last in the file system's own order.</returns>
 	public IReadOnlyList<string> VersionsOf(string id)
 		=> [.. Contents().Where(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase)).Select(c => c.Version)];
-
-	/// <summary>
-	/// The hash a package file is filed under.
-	/// </summary>
-	/// <param name="content">The package file.</param>
-	/// <returns>Its SHA-256, in lower-case hexadecimal.</returns>
-	public static string HashOf(byte[] content)
-	{
-		ArgumentNullException.ThrowIfNull(content);
-
-		return Convert.ToHexStringLower(SHA256.HashData(content));
-	}
 }

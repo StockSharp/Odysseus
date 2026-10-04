@@ -1,19 +1,6 @@
 namespace Odysseus.Worker.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Compiler;
-using Odysseus.Platform;
-using Odysseus.Domain;
 using Odysseus.Evaluation;
-using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Running a generated strategy through the market emulator.
@@ -31,23 +18,6 @@ using Odysseus.TestKit;
 public class EmulatedBacktestRunnerTests : OdysseusTestBase
 {
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 0, 0, DateTimeKind.Utc);
-
-	private async Task<BacktestRequest> RequestAsync(StrategySpec spec, IReadOnlyList<Candle> bars, ExecutionCosts costs)
-	{
-		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(spec);
-
-		return new(
-			built.Assembly,
-			built.ClassName,
-			new Dictionary<string, decimal>(StringComparer.Ordinal),
-			"DEMO",
-			TimeSpan.FromMinutes(5),
-			await StoredBars.WriteAsync(bars, "DEMO", TimeSpan.FromMinutes(5), CancellationToken),
-			StartingEquity: 100_000m,
-			Volume: 10m,
-			PriceStep: 0.01m,
-			costs);
-	}
 
 	/// <summary>
 	/// A strategy whose rules are met really trades, and what it did comes back as trades rather than
@@ -405,4 +375,21 @@ public class EmulatedBacktestRunnerTests : OdysseusTestBase
 			Parameters = [],
 			Risk = new(0.10m, 0.02m),
 		};
+
+	private async Task<BacktestRequest> RequestAsync(StrategySpec spec, IReadOnlyList<Candle> bars, ExecutionCosts costs)
+	{
+		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(spec);
+
+		return new(
+			built.Assembly,
+			built.ClassName,
+			new Dictionary<string, decimal>(StringComparer.Ordinal),
+			"DEMO",
+			TimeSpan.FromMinutes(5),
+			await StoredBars.WriteAsync(bars, "DEMO", TimeSpan.FromMinutes(5), CancellationToken),
+			StartingEquity: 100_000m,
+			Volume: 10m,
+			PriceStep: 0.01m,
+			costs);
+	}
 }

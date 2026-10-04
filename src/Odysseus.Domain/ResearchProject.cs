@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// A research project: one question, one dataset, one budget, and everything produced while
 /// answering it.
@@ -111,12 +109,6 @@ public sealed record ResearchProject
 		return this with { Status = status, UpdatedAt = EnsureUtc(now, nameof(now)) };
 	}
 
-	private void EnsureWritable()
-	{
-		if (Status == ProjectStatuses.Archived)
-			throw new InvalidOperationException($"Project {Id} is archived and cannot be changed.");
-	}
-
 	private static string Normalize(string name)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -137,5 +129,11 @@ public sealed record ResearchProject
 			throw new ArgumentException("Moments are recorded in UTC.", parameterName);
 
 		return moment;
+	}
+
+	private void EnsureWritable()
+	{
+		if (Status == ProjectStatuses.Archived)
+			throw new InvalidOperationException($"Project {Id} is archived and cannot be changed.");
 	}
 }

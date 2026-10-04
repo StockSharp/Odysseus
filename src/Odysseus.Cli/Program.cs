@@ -1,17 +1,8 @@
 namespace Odysseus.Cli;
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Odysseus.Application;
 using Odysseus.Cli.Console;
-using Odysseus.Domain;
 using Odysseus.Spec;
 
 using Con = System.Console;
@@ -33,7 +24,7 @@ public static class Program
 	/// <returns>Process exit code.</returns>
 	public static async Task<int> Main(string[] args)
 	{
-		Con.OutputEncoding = System.Text.Encoding.UTF8;
+		Con.OutputEncoding = Encoding.UTF8;
 
 		Ui.UseColour(Environment.GetEnvironmentVariable("NO_COLOR") is null);
 

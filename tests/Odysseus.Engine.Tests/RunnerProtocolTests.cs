@@ -1,17 +1,5 @@
 namespace Odysseus.Engine.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Engine;
-using Odysseus.TestKit;
-
 /// <summary>
 /// What crosses between a session and the process that is trading, and whether it comes back the same.
 /// </summary>

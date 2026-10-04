@@ -1,10 +1,6 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-
-using Odysseus.Domain;
 
 /// <summary>
 /// What came out of importing a set of bars.

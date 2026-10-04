@@ -1,7 +1,5 @@
 namespace Odysseus.Spec;
 
-using System.Collections.Generic;
-
 /// <summary>
 /// A node of the expression tree a rule is written in.
 /// </summary>

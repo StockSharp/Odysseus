@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// Persistable state of a <see cref="ResearchBudget"/>.
 /// </summary>

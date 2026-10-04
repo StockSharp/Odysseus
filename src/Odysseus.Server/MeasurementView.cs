@@ -1,10 +1,5 @@
 namespace Odysseus.Server;
 
-using System.Linq;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-
 /// <summary>
 /// Laying a measurement out for the model that asked for it.
 /// </summary>

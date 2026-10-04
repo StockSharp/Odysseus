@@ -1,13 +1,5 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.IO;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.TestKit;
-
 /// <summary>
 /// The scenarios a run may be measured under, held against the place an agent picks one from.
 /// </summary>

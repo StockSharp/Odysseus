@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// The clock of the machine the server runs on.
 /// </summary>

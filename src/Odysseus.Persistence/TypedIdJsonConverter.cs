@@ -1,9 +1,6 @@
 namespace Odysseus.Persistence;
 
-using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 /// <summary>
@@ -19,6 +16,7 @@ using System.Text.Json.Serialization;
 public sealed class TypedIdJsonConverter : JsonConverterFactory
 {
 	private static readonly Dictionary<Type, (MethodInfo Parse, PropertyInfo Value)> _known = [];
+	private static readonly Lock _sync = new();
 
 	/// <inheritdoc />
 	public override bool CanConvert(Type typeToConvert)
@@ -28,7 +26,7 @@ public sealed class TypedIdJsonConverter : JsonConverterFactory
 		if (!typeToConvert.IsValueType || typeToConvert.Namespace != "Odysseus.Domain")
 			return false;
 
-		lock (_known)
+		using (_sync.EnterScope())
 		{
 			if (_known.ContainsKey(typeToConvert))
 				return true;
@@ -59,7 +57,7 @@ public sealed class TypedIdJsonConverter : JsonConverterFactory
 			if (string.IsNullOrEmpty(text))
 				return default;
 
-			lock (_known)
+			using (_sync.EnterScope())
 				return (T)_known[typeof(T)].Parse.Invoke(null, [text]);
 		}
 

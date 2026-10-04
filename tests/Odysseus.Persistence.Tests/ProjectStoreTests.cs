@@ -1,16 +1,6 @@
 namespace Odysseus.Persistence.Tests;
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Persistence;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Projects and their audit trail. A project has to come back after a restart exactly as it was left,

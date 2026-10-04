@@ -1,19 +1,5 @@
 namespace Odysseus.Worker.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Compiler;
-using Odysseus.Domain;
-using Odysseus.Platform;
-using Odysseus.Spec;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Which bar a decision is taken on, and which bar pays for it.
 /// </summary>
@@ -154,23 +140,6 @@ public class DecisionTimingTests : OdysseusTestBase
 		return bars;
 	}
 
-	private async Task<BacktestRequest> RequestAsync(StrategySpec spec, IReadOnlyList<Candle> bars)
-	{
-		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(spec);
-
-		return new(
-			built.Assembly,
-			built.ClassName,
-			new Dictionary<string, decimal>(StringComparer.Ordinal),
-			"DEMO",
-			_timeFrame,
-			await StoredBars.WriteAsync(bars, "DEMO", _timeFrame, CancellationToken),
-			StartingEquity: 100_000m,
-			Volume: 10m,
-			PriceStep: 0.01m,
-			ExecutionCosts.Default);
-	}
-
 	/// <summary>Buy when the price is above its own average, and let go five bars later.</summary>
 	/// <param name="warmup">Bars that must close before anything is decided.</param>
 	/// <returns>The specification.</returns>
@@ -195,4 +164,21 @@ public class DecisionTimingTests : OdysseusTestBase
 			Parameters = [],
 			Risk = new(0.10m, 0.02m),
 		};
+
+	private async Task<BacktestRequest> RequestAsync(StrategySpec spec, IReadOnlyList<Candle> bars)
+	{
+		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(spec);
+
+		return new(
+			built.Assembly,
+			built.ClassName,
+			new Dictionary<string, decimal>(StringComparer.Ordinal),
+			"DEMO",
+			_timeFrame,
+			await StoredBars.WriteAsync(bars, "DEMO", _timeFrame, CancellationToken),
+			StartingEquity: 100_000m,
+			Volume: 10m,
+			PriceStep: 0.01m,
+			ExecutionCosts.Default);
+	}
 }

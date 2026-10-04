@@ -1,17 +1,12 @@
 namespace Odysseus.Engine;
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 
-using Odysseus.Application;
 using Odysseus.Domain;
 
 /// <summary>
@@ -84,6 +79,75 @@ public sealed class RunnerLauncher : IRunnerHost
 		_registry = registry ?? throw new ArgumentNullException(nameof(registry));
 		_policy = policy ?? throw new ArgumentNullException(nameof(policy));
 		_expectedEngine = expectedEngine ?? string.Empty;
+	}
+
+	/// <summary>
+	/// How a runner is launched, and what it is deliberately given and denied.
+	/// </summary>
+	/// <param name="options">Where the runner is.</param>
+	/// <param name="home">The directory the runner is to work out of.</param>
+	/// <param name="mandatePath">
+	/// Path of the live mandate, when a human at a terminal asked for one, and empty otherwise.
+	/// </param>
+	/// <returns>The start information, ready to be started.</returns>
+	/// <remarks>
+	/// Public because what is put into and taken out of the environment here is a guarantee rather than a
+	/// detail, and a guarantee that cannot be asserted is a hope.
+	/// </remarks>
+	public static ProcessStartInfo Describe(RunnerOptions options, RunnerHome home, string mandatePath)
+	{
+		ArgumentNullException.ThrowIfNull(options);
+		ArgumentNullException.ThrowIfNull(home);
+
+		var runtimeHosted = options.RunnerPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
+
+		var info = new ProcessStartInfo(runtimeHosted ? "dotnet" : options.RunnerPath)
+		{
+			// Not redirected, and this is the one that matters most. A pipe whose reader has exited is a
+			// write error on the child's first line, and the reader here exits by design - that is what
+			// the runner is for. It writes to its own log in its own home instead.
+			RedirectStandardInput = false,
+			RedirectStandardOutput = false,
+			RedirectStandardError = false,
+			UseShellExecute = false,
+			CreateNoWindow = true,
+			WorkingDirectory = Path.GetDirectoryName(options.RunnerPath) ?? AppContext.BaseDirectory,
+		};
+
+		if (runtimeHosted)
+			info.ArgumentList.Add(options.RunnerPath);
+
+		foreach (var argument in options.Arguments ?? Array.Empty<string>())
+			info.ArgumentList.Add(argument);
+
+		info.ArgumentList.Add(home.Directory);
+		info.ArgumentList.Add(DetachedArgument);
+
+		// The exact inverse of the worker, and worth saying so where it is done because it looks like a
+		// mistake otherwise: WorkerHost.Describe removes these because a worker must never reach an
+		// account, and they are left here because reaching an account is the whole of a runner's job.
+		// The credential file is a path rather than a value for this reason - the value never crosses.
+
+		// Live mode never arrives by inheritance. An operator who exported the variable in the shell that
+		// started this host still gets paper runners from it: it is removed first and then set only from
+		// what the caller explicitly passed, which the MCP server always leaves empty.
+		info.Environment.Remove(LiveMandateFile.PathVariable);
+
+		// And the confirmation of it never arrives at all. It is removed for the same reason and is never
+		// set from anything here, so a runner this host starts has no phrase and no terminal to be asked
+		// for one at - which is what makes a person at a terminal the only way into live mode, rather than
+		// a promise that no caller will pass a mandate path.
+		info.Environment.Remove(LiveMandateConfirmation.PhraseVariable);
+
+		if (!string.IsNullOrWhiteSpace(mandatePath))
+			info.Environment[LiveMandateFile.PathVariable] = mandatePath;
+
+		// A runner has no business in the project database: one connection behind a semaphore, no
+		// write-ahead log and no busy timeout is not a file two processes write. Everything it needs is
+		// in its home.
+		info.Environment.Remove("ODYSSEUS_PROJECTS_ROOT");
+
+		return info;
 	}
 
 	/// <inheritdoc />
@@ -288,72 +352,31 @@ public sealed class RunnerLauncher : IRunnerHost
 	}
 
 	/// <summary>
-	/// How a runner is launched, and what it is deliberately given and denied.
+	/// Whether a failure means the runner could not be reached, as opposed to the caller giving up.
 	/// </summary>
-	/// <param name="options">Where the runner is.</param>
-	/// <param name="home">The directory the runner is to work out of.</param>
-	/// <param name="mandatePath">
-	/// Path of the live mandate, when a human at a terminal asked for one, and empty otherwise.
-	/// </param>
-	/// <returns>The start information, ready to be started.</returns>
-	/// <remarks>
-	/// Public because what is put into and taken out of the environment here is a guarantee rather than a
-	/// detail, and a guarantee that cannot be asserted is a hope.
-	/// </remarks>
-	public static ProcessStartInfo Describe(RunnerOptions options, RunnerHome home, string mandatePath)
+	/// <param name="error">What went wrong.</param>
+	/// <param name="cancellationToken">The caller's token.</param>
+	/// <returns>Whether this is the runner's silence rather than the caller's cancellation.</returns>
+	private static bool Unreachable(Exception error, CancellationToken cancellationToken)
 	{
-		ArgumentNullException.ThrowIfNull(options);
-		ArgumentNullException.ThrowIfNull(home);
+		if (cancellationToken.IsCancellationRequested)
+			return false;
 
-		var runtimeHosted = options.RunnerPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
+		return error is IOException or TimeoutException or OperationCanceledException or UnauthorizedAccessException;
+	}
 
-		var info = new ProcessStartInfo(runtimeHosted ? "dotnet" : options.RunnerPath)
+	private static void Kill(Process process)
+	{
+		try
 		{
-			// Not redirected, and this is the one that matters most. A pipe whose reader has exited is a
-			// write error on the child's first line, and the reader here exits by design - that is what
-			// the runner is for. It writes to its own log in its own home instead.
-			RedirectStandardInput = false,
-			RedirectStandardOutput = false,
-			RedirectStandardError = false,
-			UseShellExecute = false,
-			CreateNoWindow = true,
-			WorkingDirectory = Path.GetDirectoryName(options.RunnerPath) ?? AppContext.BaseDirectory,
-		};
-
-		if (runtimeHosted)
-			info.ArgumentList.Add(options.RunnerPath);
-
-		foreach (var argument in options.Arguments ?? Array.Empty<string>())
-			info.ArgumentList.Add(argument);
-
-		info.ArgumentList.Add(home.Directory);
-		info.ArgumentList.Add(DetachedArgument);
-
-		// The exact inverse of the worker, and worth saying so where it is done because it looks like a
-		// mistake otherwise: WorkerHost.Describe removes these because a worker must never reach an
-		// account, and they are left here because reaching an account is the whole of a runner's job.
-		// The credential file is a path rather than a value for this reason - the value never crosses.
-
-		// Live mode never arrives by inheritance. An operator who exported the variable in the shell that
-		// started this host still gets paper runners from it: it is removed first and then set only from
-		// what the caller explicitly passed, which the MCP server always leaves empty.
-		info.Environment.Remove(LiveMandateFile.PathVariable);
-
-		// And the confirmation of it never arrives at all. It is removed for the same reason and is never
-		// set from anything here, so a runner this host starts has no phrase and no terminal to be asked
-		// for one at - which is what makes a person at a terminal the only way into live mode, rather than
-		// a promise that no caller will pass a mandate path.
-		info.Environment.Remove(LiveMandateConfirmation.PhraseVariable);
-
-		if (!string.IsNullOrWhiteSpace(mandatePath))
-			info.Environment[LiveMandateFile.PathVariable] = mandatePath;
-
-		// A runner has no business in the project database: one connection behind a semaphore, no
-		// write-ahead log and no busy timeout is not a file two processes write. Everything it needs is
-		// in its home.
-		info.Environment.Remove("ODYSSEUS_PROJECTS_ROOT");
-
-		return info;
+			if (!process.HasExited)
+				process.Kill(entireProcessTree: true);
+		}
+		catch (Exception error) when (error is InvalidOperationException or Win32Exception)
+		{
+			// It had already gone, which is the outcome that was wanted. A runner is only ever killed here,
+			// on the one path where it never became a deployment anybody was told about.
+		}
 	}
 
 	private RunnerPlan Plan(RunnerLaunch launch, RunnerHome home)
@@ -512,32 +535,4 @@ public sealed class RunnerLauncher : IRunnerHost
 			_registry.Home(record.DeploymentId).Directory,
 			state,
 			detail);
-
-	/// <summary>
-	/// Whether a failure means the runner could not be reached, as opposed to the caller giving up.
-	/// </summary>
-	/// <param name="error">What went wrong.</param>
-	/// <param name="cancellationToken">The caller's token.</param>
-	/// <returns>Whether this is the runner's silence rather than the caller's cancellation.</returns>
-	private static bool Unreachable(Exception error, CancellationToken cancellationToken)
-	{
-		if (cancellationToken.IsCancellationRequested)
-			return false;
-
-		return error is IOException or TimeoutException or OperationCanceledException or UnauthorizedAccessException;
-	}
-
-	private static void Kill(Process process)
-	{
-		try
-		{
-			if (!process.HasExited)
-				process.Kill(entireProcessTree: true);
-		}
-		catch (Exception error) when (error is InvalidOperationException or Win32Exception)
-		{
-			// It had already gone, which is the outcome that was wanted. A runner is only ever killed here,
-			// on the one path where it never became a deployment anybody was told about.
-		}
-	}
 }

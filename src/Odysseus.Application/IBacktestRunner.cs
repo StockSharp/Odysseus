@@ -1,12 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// What a run is charged for trading, per unit traded, on entry and again on exit.
 /// </summary>
@@ -30,13 +23,13 @@ using Odysseus.Domain;
 /// </remarks>
 public sealed record ExecutionCosts(decimal Fees, decimal HalfSpread)
 {
-	/// <summary>What one unit costs to trade, both parts together.</summary>
-	public decimal PerUnit => Fees + HalfSpread;
-
 	/// <summary>
 	/// An American equity account on a liquid stock quoted about two cents wide.
 	/// </summary>
 	public static ExecutionCosts Default { get; } = new(Fees: 0.0002m, HalfSpread: 0.01m);
+
+	/// <summary>What one unit costs to trade, both parts together.</summary>
+	public decimal PerUnit => Fees + HalfSpread;
 
 	/// <summary>
 	/// The same costs multiplied, for the scenario that asks whether the edge survives a worse market.

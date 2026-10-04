@@ -1,18 +1,5 @@
 namespace Odysseus.Worker.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Compiler;
-using Odysseus.Platform;
-using Odysseus.Domain;
-using Odysseus.Spec;
-using Odysseus.TestKit;
-
 /// <summary>
 /// A run whose orders were larger than the market that was there to fill them.
 /// </summary>
@@ -49,25 +36,6 @@ public class UnfilledOrderTests : OdysseusTestBase
 
 		IsTrue(fits.Trades.Count > 0, "sized within the bar, the strategy should have traded.");
 		IsTrue(fits.OrdersPlaced >= fits.Trades.Count, "every trade came from an order.");
-	}
-
-	private async Task<BacktestOutcome> RunAsync(decimal volume, decimal barVolume)
-	{
-		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(Spec());
-
-		return await new EmulatedBacktestRunner().RunAsync(
-			new(
-				built.Assembly,
-				built.ClassName,
-				new Dictionary<string, decimal>(),
-				"DEMO",
-				TimeSpan.FromMinutes(5),
-				await StoredBars.WriteAsync(Waves(600, barVolume), "DEMO", TimeSpan.FromMinutes(5), CancellationToken),
-				StartingEquity: 100_000m,
-				Volume: volume,
-				PriceStep: 0.01m,
-				ExecutionCosts.Default),
-			CancellationToken);
 	}
 
 	/// <summary>Buy above the average of the last twenty bars, let go five bars later.</summary>
@@ -120,5 +88,24 @@ public class UnfilledOrderTests : OdysseusTestBase
 		}
 
 		return bars;
+	}
+
+	private async Task<BacktestOutcome> RunAsync(decimal volume, decimal barVolume)
+	{
+		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(Spec());
+
+		return await new EmulatedBacktestRunner().RunAsync(
+			new(
+				built.Assembly,
+				built.ClassName,
+				new Dictionary<string, decimal>(),
+				"DEMO",
+				TimeSpan.FromMinutes(5),
+				await StoredBars.WriteAsync(Waves(600, barVolume), "DEMO", TimeSpan.FromMinutes(5), CancellationToken),
+				StartingEquity: 100_000m,
+				Volume: volume,
+				PriceStep: 0.01m,
+				ExecutionCosts.Default),
+			CancellationToken);
 	}
 }

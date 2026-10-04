@@ -1,17 +1,5 @@
 namespace Odysseus.Server.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Which of the connector tools a hosted server answers, and what it does instead.
 /// </summary>

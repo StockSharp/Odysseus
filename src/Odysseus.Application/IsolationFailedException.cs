@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// How the isolated worker failed, as opposed to how a candidate failed.
 /// </summary>

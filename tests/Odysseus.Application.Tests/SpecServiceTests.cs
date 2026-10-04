@@ -1,19 +1,8 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Persistence;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Checking a specification, and recording one as a project's next revision.
@@ -32,6 +21,11 @@ public class SpecServiceTests : OdysseusTestBase
 {
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 30, 0, DateTimeKind.Utc);
 
+	private const string Thesis = "A price above its own recent average keeps going for a few bars.";
+
+	private const string TimeExit =
+		"""{ "id": "x1", "kind": "TimeExit", "direction": "Long", "length": { "kind": "Constant", "value": 5 } }""";
+
 	private string _root;
 	private SqliteProjectStore _store;
 	private SqliteOperationLog _operations;
@@ -39,6 +33,19 @@ public class SpecServiceTests : OdysseusTestBase
 	private FileSpecStore _specs;
 	private ProjectService _projects;
 	private SpecService _service;
+
+	/// <summary>A specification with nothing wrong with it.</summary>
+	private static string Sound => Document(Thesis, Compare(Indicator(""", "source": "Close" """)), TimeExit);
+
+	/// <summary>The same strategy, argued for in different words.</summary>
+	private static string Reworded => Document(
+		"Momentum above a moving average persists over a handful of candles.",
+		Compare(Indicator(""", "source": "Close" """)),
+		TimeExit);
+
+	/// <summary>A specification that opens positions and never closes them.</summary>
+	private static string WithNothingToCloseAPosition
+		=> Document(Thesis, Compare(Indicator(""", "source": "Close" """)), string.Empty);
 
 	/// <summary>Builds the services over temporary storage.</summary>
 	[TestInitialize]
@@ -115,7 +122,7 @@ public class SpecServiceTests : OdysseusTestBase
 	[TestMethod]
 	public void ACandleFieldOutsideTheOnesThatExistIsNotInvented()
 	{
-		var check = _service.Check(Document(_thesis, Compare(Indicator(""", "source": "99" """)), _timeExit));
+		var check = _service.Check(Document(Thesis, Compare(Indicator(""", "source": "99" """)), TimeExit));
 
 		IsFalse(check.IsValid, "an indicator was allowed to read candle field number ninety-nine.");
 
@@ -286,21 +293,65 @@ public class SpecServiceTests : OdysseusTestBase
 		yield return ("a document with nothing in it", "{}");
 		yield return ("a document that is only white space", "   ");
 		yield return ("a document that is the JSON null", "null");
-		yield return ("an expression kind that does not exist", Document(_thesis, """{ "kind": "Sideways" }""", _timeExit));
-		yield return ("a condition that is not an expression at all", Document(_thesis, "42", _timeExit));
+		yield return ("an expression kind that does not exist", Document(Thesis, """{ "kind": "Sideways" }""", TimeExit));
+		yield return ("a condition that is not an expression at all", Document(Thesis, "42", TimeExit));
 
 		yield return ("a constant written as text",
-			Document(_thesis, Compare("""{ "kind": "Constant", "value": "20" }"""), _timeExit));
+			Document(Thesis, Compare("""{ "kind": "Constant", "value": "20" }"""), TimeExit));
 
 		yield return ("a parameter named with a number",
-			Document(_thesis, Compare("""{ "kind": "Parameter", "name": 20 }"""), _timeExit));
+			Document(Thesis, Compare("""{ "kind": "Parameter", "name": 20 }"""), TimeExit));
 
 		yield return ("an indicator reading a candle field that does not exist",
-			Document(_thesis, Compare(Indicator(""", "source": "Middle" """)), _timeExit));
+			Document(Thesis, Compare(Indicator(""", "source": "Middle" """)), TimeExit));
 
 		yield return ("an offset that is not a whole number of candles",
-			Document(_thesis, Compare(Indicator(""", "source": "Close", "offset": 1.5 """)), _timeExit));
+			Document(Thesis, Compare(Indicator(""", "source": "Close", "offset": 1.5 """)), TimeExit));
 	}
+
+	private static string Describe(SpecCheck check)
+		=> string.Join("; ", check.Problems.Select(p => $"{p.Path}: {p.Message}"));
+
+	/// <summary>Enough bars for a dataset with something in every slice.</summary>
+	private static IReadOnlyList<Candle> Bars()
+	{
+		var bars = new List<Candle>();
+		var time = _open;
+
+		for (var i = 0; i < 600; i++)
+		{
+			var close = 100m + Math.Round(5m * (decimal)Math.Sin(i * 2 * Math.PI / 60), 2);
+			var open = bars.Count == 0 ? close : bars[^1].Close;
+
+			bars.Add(new(time, open, Math.Max(open, close) + 0.05m, Math.Min(open, close) - 0.05m, close, 10_000m));
+
+			time = time.AddMinutes(5);
+		}
+
+		return bars;
+	}
+
+	private static string Indicator(string extra)
+		=> $$"""{ "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 20 }{{extra}} }""";
+
+	private static string Compare(string right)
+		=> $$"""{ "kind": "Compare", "left": { "kind": "Field", "field": "Close" }, "operator": "GreaterThan", "right": {{right}} }""";
+
+	private static string Document(string thesis, string condition, string exits)
+		=> $$"""
+		{
+		  "name": "Above its average",
+		  "thesis": "{{thesis}}",
+		  "allowLong": true,
+		  "allowShort": false,
+		  "timeFrame": "00:05:00",
+		  "warmupBars": 20,
+		  "entries": [ { "id": "e1", "direction": "Long", "condition": {{condition}} } ],
+		  "exits": [ {{exits}} ],
+		  "parameters": [],
+		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
+		}
+		""";
 
 	/// <summary>A project holding data, so that a proposal against it could be measured.</summary>
 	private async Task<ProjectId> ProjectWithDataAsync(string name)
@@ -326,66 +377,4 @@ public class SpecServiceTests : OdysseusTestBase
 		await _datasets.SaveAsync(project, imported, CancellationToken);
 		await _store.UpdateAsync(opened.WithDataset(imported.Manifest.Id, DateTime.UtcNow), CancellationToken);
 	}
-
-	private static string Describe(SpecCheck check)
-		=> string.Join("; ", check.Problems.Select(p => $"{p.Path}: {p.Message}"));
-
-	/// <summary>Enough bars for a dataset with something in every slice.</summary>
-	private static IReadOnlyList<Candle> Bars()
-	{
-		var bars = new List<Candle>();
-		var time = _open;
-
-		for (var i = 0; i < 600; i++)
-		{
-			var close = 100m + Math.Round(5m * (decimal)Math.Sin(i * 2 * Math.PI / 60), 2);
-			var open = bars.Count == 0 ? close : bars[^1].Close;
-
-			bars.Add(new(time, open, Math.Max(open, close) + 0.05m, Math.Min(open, close) - 0.05m, close, 10_000m));
-
-			time = time.AddMinutes(5);
-		}
-
-		return bars;
-	}
-
-	private const string _thesis = "A price above its own recent average keeps going for a few bars.";
-
-	private const string _timeExit =
-		"""{ "id": "x1", "kind": "TimeExit", "direction": "Long", "length": { "kind": "Constant", "value": 5 } }""";
-
-	/// <summary>A specification with nothing wrong with it.</summary>
-	private static string Sound => Document(_thesis, Compare(Indicator(""", "source": "Close" """)), _timeExit);
-
-	/// <summary>The same strategy, argued for in different words.</summary>
-	private static string Reworded => Document(
-		"Momentum above a moving average persists over a handful of candles.",
-		Compare(Indicator(""", "source": "Close" """)),
-		_timeExit);
-
-	/// <summary>A specification that opens positions and never closes them.</summary>
-	private static string WithNothingToCloseAPosition
-		=> Document(_thesis, Compare(Indicator(""", "source": "Close" """)), string.Empty);
-
-	private static string Indicator(string extra)
-		=> $$"""{ "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 20 }{{extra}} }""";
-
-	private static string Compare(string right)
-		=> $$"""{ "kind": "Compare", "left": { "kind": "Field", "field": "Close" }, "operator": "GreaterThan", "right": {{right}} }""";
-
-	private static string Document(string thesis, string condition, string exits)
-		=> $$"""
-		{
-		  "name": "Above its average",
-		  "thesis": "{{thesis}}",
-		  "allowLong": true,
-		  "allowShort": false,
-		  "timeFrame": "00:05:00",
-		  "warmupBars": 20,
-		  "entries": [ { "id": "e1", "direction": "Long", "condition": {{condition}} } ],
-		  "exits": [ {{exits}} ],
-		  "parameters": [],
-		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
-		}
-		""";
 }

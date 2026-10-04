@@ -1,16 +1,11 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Odysseus.Domain;
 using Odysseus.Evaluation;
 using Odysseus.Spec;
 
@@ -50,6 +45,9 @@ public sealed record RunScenario(string Name, ExecutionCosts Costs, int EntryDel
 	/// </remarks>
 	public static RunScenario Delayed { get; } = new("entryOneBarLater", ExecutionCosts.Default, EntryDelayBars: 1);
 
+	/// <summary>Every scenario a run may be charged under.</summary>
+	public static IReadOnlyList<RunScenario> All { get; } = [Baseline, Stressed, Delayed];
+
 	/// <summary>
 	/// Finds a scenario by name.
 	/// </summary>
@@ -66,9 +64,6 @@ public sealed record RunScenario(string Name, ExecutionCosts Costs, int EntryDel
 				$"'{name}' is not a run scenario. There are: {string.Join(", ", All.Select(s => s.Name))}.",
 				nameof(name));
 	}
-
-	/// <summary>Every scenario a run may be charged under.</summary>
-	public static IReadOnlyList<RunScenario> All { get; } = [Baseline, Stressed, Delayed];
 }
 
 /// <summary>
@@ -140,6 +135,29 @@ public sealed record RunWindow(int Index, int Count)
 /// </remarks>
 public sealed class BacktestService
 {
+	/// <summary>Money a run starts with, which every return is measured against.</summary>
+	public const decimal StartingEquity = 100_000m;
+
+	/// <summary>
+	/// Smallest price movement of the instruments this server trades. American equities tick in cents
+	/// above a dollar, and that is the whole of the market it downloads.
+	/// </summary>
+	public const decimal PriceStep = 0.01m;
+
+	/// <summary>
+	/// Interruptions of one candidate that are given back before the candidate is answerable for them.
+	/// </summary>
+	/// <remarks>
+	/// A failure that costs nothing can be asked for forever, so a candidate that reliably kills the
+	/// process running it would be an unlimited free run. After this many it stops being free: the
+	/// attempt is recorded as the candidate's own failure and charged, because a strategy the machinery
+	/// cannot survive has been answered as surely as one that threw.
+	///
+	/// Counted per candidate rather than per fingerprint. The same compiled code takes the process down
+	/// whatever numbers it is handed, and a count kept per set of parameters is a count escaped by moving
+	/// one of them a hundredth.
+	/// </remarks>
+	public const int FreeInterruptions = 3;
 	private readonly IProjectStore _projects;
 	private readonly ICandidateStore _candidates;
 	private readonly ISpecStore _specs;
@@ -192,30 +210,6 @@ public sealed class BacktestService
 		_clock = clock ?? throw new ArgumentNullException(nameof(clock));
 	}
 
-	/// <summary>Money a run starts with, which every return is measured against.</summary>
-	public const decimal StartingEquity = 100_000m;
-
-	/// <summary>
-	/// Smallest price movement of the instruments this server trades. American equities tick in cents
-	/// above a dollar, and that is the whole of the market it downloads.
-	/// </summary>
-	public const decimal PriceStep = 0.01m;
-
-	/// <summary>
-	/// Interruptions of one candidate that are given back before the candidate is answerable for them.
-	/// </summary>
-	/// <remarks>
-	/// A failure that costs nothing can be asked for forever, so a candidate that reliably kills the
-	/// process running it would be an unlimited free run. After this many it stops being free: the
-	/// attempt is recorded as the candidate's own failure and charged, because a strategy the machinery
-	/// cannot survive has been answered as surely as one that threw.
-	///
-	/// Counted per candidate rather than per fingerprint. The same compiled code takes the process down
-	/// whatever numbers it is handed, and a count kept per set of parameters is a count escaped by moving
-	/// one of them a hundredth.
-	/// </remarks>
-	public const int FreeInterruptions = 3;
-
 	/// <summary>
 	/// Runs a candidate over a slice.
 	/// </summary>
@@ -256,6 +250,146 @@ public sealed class BacktestService
 	}
 
 	/// <summary>
+	/// Reads one run.
+	/// </summary>
+	/// <param name="project">Project the run belongs to.</param>
+	/// <param name="run">Run to read.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The run.</returns>
+	public ValueTask<RunResult> GetAsync(ProjectId project, RunId run, CancellationToken cancellationToken)
+		=> _runs.GetAsync(project, run, cancellationToken);
+
+	/// <summary>
+	/// Names the symbols of the project's dataset that a run did not cover.
+	/// </summary>
+	/// <param name="project">Project the run belongs to.</param>
+	/// <param name="measured">Symbol the run traded.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The other symbols, or an empty list when there are none.</returns>
+	/// <remarks>
+	/// A run trades one instrument. When the caller does not name one it gets the first of the dataset,
+	/// which is a choice being made on its behalf, and a two-symbol import measured on one of them looks
+	/// exactly like a one-symbol import until somebody notices. Saying what was left out is cheaper than
+	/// finding out later that half the data was never touched.
+	/// </remarks>
+	public async ValueTask<IReadOnlyList<string>> SymbolsNotCoveredAsync(
+		ProjectId project,
+		string measured,
+		CancellationToken cancellationToken)
+	{
+		var existing = await _projects.OpenAsync(project, cancellationToken);
+
+		if (existing.Dataset.IsEmpty)
+			return [];
+
+		var manifest = await _datasets.GetManifestAsync(project, existing.Dataset, cancellationToken);
+
+		return [.. manifest.Symbols.Where(s => !string.Equals(s, measured, StringComparison.Ordinal))];
+	}
+
+	/// <summary>
+	/// Lists the runs of a project.
+	/// </summary>
+	/// <param name="project">Project to list.</param>
+	/// <param name="candidate">Candidate to list the runs of, or the default value for all of them.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The runs, oldest first.</returns>
+	public ValueTask<IReadOnlyList<RunResult>> ListAsync(
+		ProjectId project,
+		CandidateId candidate,
+		CancellationToken cancellationToken)
+		=> _runs.ListAsync(project, candidate, cancellationToken);
+
+	/// <summary>
+	/// Reads the trades of a run.
+	/// </summary>
+	/// <param name="project">Project the run belongs to.</param>
+	/// <param name="run">Run to read.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The trades.</returns>
+	public async ValueTask<IReadOnlyList<ExecutedTrade>> ReadTradesAsync(
+		ProjectId project,
+		RunId run,
+		CancellationToken cancellationToken)
+	{
+		var existing = await _runs.GetAsync(project, run, cancellationToken);
+		var content = await _artifacts.ReadAsync(project, existing.Trades, cancellationToken);
+
+		return JsonSerializer.Deserialize<ExecutedTrade[]>(content);
+	}
+
+	/// <summary>
+	/// Cuts a run's result apart to see where it came from.
+	/// </summary>
+	/// <param name="project">Project the run belongs to.</param>
+	/// <param name="run">Run to explain.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The result, cut by month, by part of the session, by holding time and by direction.</returns>
+	/// <remarks>
+	/// Nothing is re-run and nothing is charged: these are the trades the run already recorded, grouped.
+	/// </remarks>
+	public async ValueTask<RunBreakdown> ExplainAsync(
+		ProjectId project,
+		RunId run,
+		CancellationToken cancellationToken)
+	{
+		var existing = await _runs.GetAsync(project, run, cancellationToken);
+		var content = await _artifacts.ReadAsync(project, existing.Trades, cancellationToken);
+		var trades = JsonSerializer.Deserialize<ExecutedTrade[]>(content);
+
+		// The whole slice, not the window the run measured: the bars are read for the hours the instrument
+		// trades in, and those are a property of the instrument rather than of one stretch of it.
+		var bars = await _datasets.LoadAsync(
+			project, existing.Dataset, existing.Symbol, existing.Slice, cancellationToken);
+
+		return RunBreakdownCalculator.Measure(trades, _profiler.ActiveSession(bars));
+	}
+
+	/// <summary>
+	/// Reads the equity curve of a run.
+	/// </summary>
+	/// <param name="project">Project the run belongs to.</param>
+	/// <param name="run">Run to read.</param>
+	/// <param name="cancellationToken">Cancellation token.</param>
+	/// <returns>The curve.</returns>
+	public async ValueTask<IReadOnlyList<EquityPoint>> ReadEquityAsync(
+		ProjectId project,
+		RunId run,
+		CancellationToken cancellationToken)
+	{
+		var existing = await _runs.GetAsync(project, run, cancellationToken);
+		var content = await _artifacts.ReadAsync(project, existing.Equity, cancellationToken);
+
+		return JsonSerializer.Deserialize<EquityPoint[]>(content);
+	}
+
+	/// <summary>
+	/// How many units one position holds. The specification says what share of the account a position may
+	/// take, so the run buys that much of it at the first price of the slice and keeps the size fixed for
+	/// the whole run. Fixed rather than compounding, because a size that grows with the account turns a
+	/// good first month into most of the result and hides what the rules actually did.
+	/// </summary>
+	/// <param name="spec">Specification whose risk block says how much of the account a position may take.</param>
+	/// <param name="symbol">Symbol to be traded, which says how much one unit of it carries.</param>
+	/// <param name="price">Price to size against.</param>
+	/// <returns>Units of the symbol.</returns>
+	/// <remarks>
+	/// Sized by what a unit carries rather than by what it costs. A contract quoted at 9.05 carries 905
+	/// dollars of exposure, so a tenth of a hundred thousand is eleven of them - not the eleven hundred
+	/// that dividing by the quoted price would buy, which is a million dollars of exposure on a
+	/// hundred-thousand-dollar account.
+	/// </remarks>
+	internal static decimal PositionSize(StrategySpec spec, string symbol, decimal price)
+	{
+		if (price <= 0)
+			throw new InvalidOperationException("The first bar of the slice has no price to size a position against.");
+
+		var exposure = price * ContractSymbol.SizeOf(symbol);
+
+		return Math.Max(1m, Math.Floor(StartingEquity * spec.Risk.MaxPositionPercent / exposure));
+	}
+
+	/// <summary>
 	/// Runs a candidate over the closed part of the history.
 	/// </summary>
 	/// <param name="project">Project the candidate belongs to.</param>
@@ -286,6 +420,57 @@ public sealed class BacktestService
 		=> RunCoreAsync(
 			project, candidate, DataSlices.Final, window, symbol, scenario, parameters,
 			operationKey, actor, cancellationToken);
+
+	/// <summary>
+	/// The failure as the harness's, or <see langword="null"/> when it is the candidate's.
+	/// </summary>
+	/// <remarks>
+	/// The line. A worker that died mid-sentence or greeted with a protocol this server does not speak
+	/// says nothing about the strategy inside it. A worker stopped on its deadline or its memory limit
+	/// says a great deal: the machinery did precisely what it exists for, and the thing that would not
+	/// stop was the candidate's own arithmetic - which is why the error contract already answers those
+	/// two with a remediation addressed to the specification.
+	/// </remarks>
+	private static HarnessFailedException Blames(Exception error)
+		=> error switch
+		{
+			HarnessFailedException broken => broken,
+
+			IsolationFailedException { Kind: IsolationFailures.Crashed or IsolationFailures.Handshake } worker
+				=> new(HarnessFailures.Worker, worker.Message, worker),
+
+			_ => null,
+		};
+
+	private static byte[] Serialize<T>(IReadOnlyList<T> items)
+		=> JsonSerializer.SerializeToUtf8Bytes(items);
+
+	// The bars are named by what they are - instrument, candle length and range - rather than by the
+	// dataset that imported them, so importing the same range again finds the runs already made over it.
+	private static string Fingerprint(
+		Candidate candidate,
+		DatasetManifest manifest,
+		DataSlices slice,
+		RunWindow window,
+		string symbol,
+		RunScenario scenario,
+		IReadOnlyDictionary<string, decimal> parameters)
+	{
+		var settings = string.Join(
+			",",
+			parameters
+				.OrderBy(p => p.Key, StringComparer.Ordinal)
+				.Select(p => $"{p.Key}={p.Value.ToString(CultureInfo.InvariantCulture)}"));
+
+		var (from, to) = manifest.Split.BoundsOf(slice);
+
+		var material =
+			$"{candidate.AssemblyHash}|{symbol}|{manifest.TimeFrame.Ticks}|{from:O}|{to:O}|{slice}|" +
+			$"{window.Index}/{window.Count}|" +
+			$"{scenario.Name}|{scenario.Costs.Fees}|{scenario.Costs.HalfSpread}|{scenario.EntryDelayBars}|{settings}";
+
+		return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(material)));
+	}
 
 	private async ValueTask<(RunResult Run, bool WasAlreadyRun)> RunCoreAsync(
 		ProjectId project,
@@ -560,27 +745,6 @@ public sealed class BacktestService
 	}
 
 	/// <summary>
-	/// The failure as the harness's, or <see langword="null"/> when it is the candidate's.
-	/// </summary>
-	/// <remarks>
-	/// The line. A worker that died mid-sentence or greeted with a protocol this server does not speak
-	/// says nothing about the strategy inside it. A worker stopped on its deadline or its memory limit
-	/// says a great deal: the machinery did precisely what it exists for, and the thing that would not
-	/// stop was the candidate's own arithmetic - which is why the error contract already answers those
-	/// two with a remediation addressed to the specification.
-	/// </remarks>
-	private static HarnessFailedException Blames(Exception error)
-		=> error switch
-		{
-			HarnessFailedException broken => broken,
-
-			IsolationFailedException { Kind: IsolationFailures.Crashed or IsolationFailures.Handshake } worker
-				=> new(HarnessFailures.Worker, worker.Message, worker),
-
-			_ => null,
-		};
-
-	/// <summary>
 	/// Stores a result series, treating a store that will not take it as the harness failing.
 	/// </summary>
 	private async ValueTask<ArtifactDescriptor> StoreAsync<T>(
@@ -635,176 +799,6 @@ public sealed class BacktestService
 			_clock.UtcNow,
 			error,
 			null);
-
-	/// <summary>
-	/// Reads one run.
-	/// </summary>
-	/// <param name="project">Project the run belongs to.</param>
-	/// <param name="run">Run to read.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <returns>The run.</returns>
-	public ValueTask<RunResult> GetAsync(ProjectId project, RunId run, CancellationToken cancellationToken)
-		=> _runs.GetAsync(project, run, cancellationToken);
-
-	/// <summary>
-	/// Names the symbols of the project's dataset that a run did not cover.
-	/// </summary>
-	/// <param name="project">Project the run belongs to.</param>
-	/// <param name="measured">Symbol the run traded.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <returns>The other symbols, or an empty list when there are none.</returns>
-	/// <remarks>
-	/// A run trades one instrument. When the caller does not name one it gets the first of the dataset,
-	/// which is a choice being made on its behalf, and a two-symbol import measured on one of them looks
-	/// exactly like a one-symbol import until somebody notices. Saying what was left out is cheaper than
-	/// finding out later that half the data was never touched.
-	/// </remarks>
-	public async ValueTask<IReadOnlyList<string>> SymbolsNotCoveredAsync(
-		ProjectId project,
-		string measured,
-		CancellationToken cancellationToken)
-	{
-		var existing = await _projects.OpenAsync(project, cancellationToken);
-
-		if (existing.Dataset.IsEmpty)
-			return [];
-
-		var manifest = await _datasets.GetManifestAsync(project, existing.Dataset, cancellationToken);
-
-		return [.. manifest.Symbols.Where(s => !string.Equals(s, measured, StringComparison.Ordinal))];
-	}
-
-	/// <summary>
-	/// Lists the runs of a project.
-	/// </summary>
-	/// <param name="project">Project to list.</param>
-	/// <param name="candidate">Candidate to list the runs of, or the default value for all of them.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <returns>The runs, oldest first.</returns>
-	public ValueTask<IReadOnlyList<RunResult>> ListAsync(
-		ProjectId project,
-		CandidateId candidate,
-		CancellationToken cancellationToken)
-		=> _runs.ListAsync(project, candidate, cancellationToken);
-
-	/// <summary>
-	/// Reads the trades of a run.
-	/// </summary>
-	/// <param name="project">Project the run belongs to.</param>
-	/// <param name="run">Run to read.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <returns>The trades.</returns>
-	public async ValueTask<IReadOnlyList<ExecutedTrade>> ReadTradesAsync(
-		ProjectId project,
-		RunId run,
-		CancellationToken cancellationToken)
-	{
-		var existing = await _runs.GetAsync(project, run, cancellationToken);
-		var content = await _artifacts.ReadAsync(project, existing.Trades, cancellationToken);
-
-		return JsonSerializer.Deserialize<ExecutedTrade[]>(content);
-	}
-
-	/// <summary>
-	/// Cuts a run's result apart to see where it came from.
-	/// </summary>
-	/// <param name="project">Project the run belongs to.</param>
-	/// <param name="run">Run to explain.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <returns>The result, cut by month, by part of the session, by holding time and by direction.</returns>
-	/// <remarks>
-	/// Nothing is re-run and nothing is charged: these are the trades the run already recorded, grouped.
-	/// </remarks>
-	public async ValueTask<RunBreakdown> ExplainAsync(
-		ProjectId project,
-		RunId run,
-		CancellationToken cancellationToken)
-	{
-		var existing = await _runs.GetAsync(project, run, cancellationToken);
-		var content = await _artifacts.ReadAsync(project, existing.Trades, cancellationToken);
-		var trades = JsonSerializer.Deserialize<ExecutedTrade[]>(content);
-
-		// The whole slice, not the window the run measured: the bars are read for the hours the instrument
-		// trades in, and those are a property of the instrument rather than of one stretch of it.
-		var bars = await _datasets.LoadAsync(
-			project, existing.Dataset, existing.Symbol, existing.Slice, cancellationToken);
-
-		return RunBreakdownCalculator.Measure(trades, _profiler.ActiveSession(bars));
-	}
-
-	/// <summary>
-	/// Reads the equity curve of a run.
-	/// </summary>
-	/// <param name="project">Project the run belongs to.</param>
-	/// <param name="run">Run to read.</param>
-	/// <param name="cancellationToken">Cancellation token.</param>
-	/// <returns>The curve.</returns>
-	public async ValueTask<IReadOnlyList<EquityPoint>> ReadEquityAsync(
-		ProjectId project,
-		RunId run,
-		CancellationToken cancellationToken)
-	{
-		var existing = await _runs.GetAsync(project, run, cancellationToken);
-		var content = await _artifacts.ReadAsync(project, existing.Equity, cancellationToken);
-
-		return JsonSerializer.Deserialize<EquityPoint[]>(content);
-	}
-
-	/// <summary>
-	/// How many units one position holds. The specification says what share of the account a position may
-	/// take, so the run buys that much of it at the first price of the slice and keeps the size fixed for
-	/// the whole run. Fixed rather than compounding, because a size that grows with the account turns a
-	/// good first month into most of the result and hides what the rules actually did.
-	/// </summary>
-	/// <param name="spec">Specification whose risk block says how much of the account a position may take.</param>
-	/// <param name="symbol">Symbol to be traded, which says how much one unit of it carries.</param>
-	/// <param name="price">Price to size against.</param>
-	/// <returns>Units of the symbol.</returns>
-	/// <remarks>
-	/// Sized by what a unit carries rather than by what it costs. A contract quoted at 9.05 carries 905
-	/// dollars of exposure, so a tenth of a hundred thousand is eleven of them - not the eleven hundred
-	/// that dividing by the quoted price would buy, which is a million dollars of exposure on a
-	/// hundred-thousand-dollar account.
-	/// </remarks>
-	internal static decimal PositionSize(StrategySpec spec, string symbol, decimal price)
-	{
-		if (price <= 0)
-			throw new InvalidOperationException("The first bar of the slice has no price to size a position against.");
-
-		var exposure = price * ContractSymbol.SizeOf(symbol);
-
-		return Math.Max(1m, Math.Floor(StartingEquity * spec.Risk.MaxPositionPercent / exposure));
-	}
-
-	private static byte[] Serialize<T>(IReadOnlyList<T> items)
-		=> JsonSerializer.SerializeToUtf8Bytes(items);
-
-	// The bars are named by what they are - instrument, candle length and range - rather than by the
-	// dataset that imported them, so importing the same range again finds the runs already made over it.
-	private static string Fingerprint(
-		Candidate candidate,
-		DatasetManifest manifest,
-		DataSlices slice,
-		RunWindow window,
-		string symbol,
-		RunScenario scenario,
-		IReadOnlyDictionary<string, decimal> parameters)
-	{
-		var settings = string.Join(
-			",",
-			parameters
-				.OrderBy(p => p.Key, StringComparer.Ordinal)
-				.Select(p => $"{p.Key}={p.Value.ToString(CultureInfo.InvariantCulture)}"));
-
-		var (from, to) = manifest.Split.BoundsOf(slice);
-
-		var material =
-			$"{candidate.AssemblyHash}|{symbol}|{manifest.TimeFrame.Ticks}|{from:O}|{to:O}|{slice}|" +
-			$"{window.Index}/{window.Count}|" +
-			$"{scenario.Name}|{scenario.Costs.Fees}|{scenario.Costs.HalfSpread}|{scenario.EntryDelayBars}|{settings}";
-
-		return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(material)));
-	}
 }
 
 /// <summary>

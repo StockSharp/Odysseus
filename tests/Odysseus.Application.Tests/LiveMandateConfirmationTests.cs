@@ -1,15 +1,7 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The second gate on real money: the phrase written in a mandate, demanded back through a channel the

@@ -1,12 +1,5 @@
 namespace Odysseus.Cli.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using Odysseus.Cli.Console;
 using Odysseus.TestKit;
 
@@ -144,7 +137,7 @@ public class UiTests : OdysseusTestBase
 		=> [.. text.Split('\n').Select(l => Strip(l.TrimEnd('\r'))).Where(l => l.Length > 0)];
 
 	private static string Strip(string text)
-		=> System.Text.RegularExpressions.Regex.Replace(text, "\\[[0-9;]*m", "");
+		=> Regex.Replace(text, "\\[[0-9;]*m", "");
 
 	private static int Ink(string row)
 		=> row.Count(c => c is >= '▁' and <= '█');

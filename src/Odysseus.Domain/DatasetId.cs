@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// Identifies a dataset: the symbols and range a project researches.
 /// </summary>

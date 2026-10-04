@@ -1,13 +1,6 @@
 namespace Odysseus.Persistence;
 
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
 using Microsoft.Data.Sqlite;
-
-using Odysseus.Application;
 
 /// <summary>
 /// Remembers operation keys in a database next to the projects.

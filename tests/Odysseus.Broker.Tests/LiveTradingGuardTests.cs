@@ -1,17 +1,12 @@
 namespace Odysseus.Broker.Tests;
 
-using System;
 using System.Collections.Generic;
 
 using Ecng.Common;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using StockSharp.Messages;
 
-using Odysseus.Application;
 using Odysseus.Domain;
-using Odysseus.TestKit;
 
 /// <summary>
 /// The guard on the other side of the paper claim.

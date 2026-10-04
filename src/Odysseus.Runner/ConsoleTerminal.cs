@@ -1,12 +1,5 @@
 namespace Odysseus.Runner;
 
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Application;
-
 /// <summary>
 /// The terminal this process was started at, when it was started at one.
 /// </summary>

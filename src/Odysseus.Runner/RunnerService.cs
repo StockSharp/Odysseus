@@ -1,14 +1,8 @@
 namespace Odysseus.Runner;
 
-using System;
 using System.Globalization;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Odysseus.Application;
 using Odysseus.Domain;
-using Odysseus.Engine;
 
 /// <summary>
 /// One deployment, for as long as it trades.
@@ -429,6 +423,9 @@ internal sealed class RunnerService : IAsyncDisposable
 			await session.DisposeAsync();
 	}
 
+	private static string Written(decimal value)
+		=> value.ToString(CultureInfo.InvariantCulture);
+
 	/// <summary>
 	/// Refuses to start what this process is not permitted to do, before anything is downloaded.
 	/// </summary>
@@ -591,7 +588,4 @@ internal sealed class RunnerService : IAsyncDisposable
 			state.RealizedProfit,
 			what));
 	}
-
-	private static string Written(decimal value)
-		=> value.ToString(CultureInfo.InvariantCulture);
 }

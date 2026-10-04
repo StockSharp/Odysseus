@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// Raised when a product cannot be installed because this machine is not set up to install one.
 /// </summary>

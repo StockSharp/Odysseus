@@ -1,16 +1,5 @@
 namespace Odysseus.Engine.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.TestKit;
-
 /// <summary>
 /// What the server does when the process running a candidate misbehaves.
 /// </summary>
@@ -28,6 +17,9 @@ using Odysseus.TestKit;
 public class WorkerHostTests : OdysseusTestBase
 {
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 0, 0, DateTimeKind.Utc);
+
+	/// <summary>The engine the stub reports, and therefore the one the host is told to expect.</summary>
+	private const string Engine = "stub-engine";
 
 	/// <summary>A worker that answers is answered, and the outcome comes back whole.</summary>
 	[TestMethod]
@@ -279,9 +271,6 @@ public class WorkerHostTests : OdysseusTestBase
 			"the worker was started without the pipes the protocol runs over.");
 	}
 
-	/// <summary>The engine the stub reports, and therefore the one the host is told to expect.</summary>
-	private const string Engine = "stub-engine";
-
 	private static WorkerHost Host(string behaviour)
 		=> new(Options(behaviour), Engine);
 
@@ -290,9 +279,7 @@ public class WorkerHostTests : OdysseusTestBase
 		var stub = Stub();
 
 		if (stub is null)
-		{
 			Fail("The misbehaving worker was not found where the build puts it. This project builds it, so its absence is a broken build or a wrong path.");
-		}
 
 		return At(stub, behaviour);
 	}

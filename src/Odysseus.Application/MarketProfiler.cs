@@ -1,10 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
-
-using Odysseus.Domain;
-
 /// <summary>How much, and how violently, the instrument moves.</summary>
 /// <param name="MedianBarRangePercent">Middle bar's high-to-low range, as a percentage of its close.</param>
 /// <param name="UpperBarRangePercent">Range of the widest one bar in ten, as a percentage.</param>

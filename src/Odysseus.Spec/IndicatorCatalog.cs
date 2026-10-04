@@ -1,9 +1,5 @@
 namespace Odysseus.Spec;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 /// <summary>How an indicator is fed.</summary>
 public enum IndicatorSources
 {

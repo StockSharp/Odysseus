@@ -1,9 +1,5 @@
 namespace Odysseus.Spec;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 using Odysseus.Domain;
 
 /// <summary>
@@ -80,6 +76,23 @@ public static class SpecValidator
 		CheckComplexity(spec, problems);
 
 		return new(problems);
+	}
+
+	/// <summary>
+	/// How many candles must pass before every rule can be evaluated.
+	/// </summary>
+	/// <param name="spec">Specification to measure.</param>
+	/// <returns>The number of candles.</returns>
+	public static int RequiredWarmup(StrategySpec spec)
+	{
+		ArgumentNullException.ThrowIfNull(spec);
+
+		var longest = 0;
+
+		foreach (var expression in spec.AllExpressions)
+			longest = Math.Max(longest, Lookback(expression, spec));
+
+		return longest;
 	}
 
 	private static void CheckShape(StrategySpec spec, List<SpecProblem> problems)
@@ -324,23 +337,6 @@ public static class SpecValidator
 				$"Warm-up is {spec.WarmupBars} candles, but the rules look back {required}.",
 				$"Raise it to at least {required}. Trading before an indicator has formed does not fail; it quietly produces a result that is not real."));
 		}
-	}
-
-	/// <summary>
-	/// How many candles must pass before every rule can be evaluated.
-	/// </summary>
-	/// <param name="spec">Specification to measure.</param>
-	/// <returns>The number of candles.</returns>
-	public static int RequiredWarmup(StrategySpec spec)
-	{
-		ArgumentNullException.ThrowIfNull(spec);
-
-		var longest = 0;
-
-		foreach (var expression in spec.AllExpressions)
-			longest = Math.Max(longest, Lookback(expression, spec));
-
-		return longest;
 	}
 
 	private static int Lookback(Expression expression, StrategySpec spec)

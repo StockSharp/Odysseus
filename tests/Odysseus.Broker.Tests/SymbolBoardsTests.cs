@@ -1,9 +1,6 @@
 namespace Odysseus.Broker.Tests;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using Odysseus.Platform;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Which market a named symbol is quoted on.

@@ -1,21 +1,11 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Persistence;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Declaring a piece of research finished and keeping it.
@@ -31,38 +21,6 @@ using Odysseus.TestKit;
 public class CompletionServiceTests : OdysseusTestBase
 {
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 30, 0, DateTimeKind.Utc);
-
-	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
-	private sealed class Builder : IStrategyBuilder
-	{
-		public BuiltStrategy Build(StrategySpec spec)
-			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
-	}
-
-	/// <summary>A runner that reports the same modest, profitable run whatever it is handed.</summary>
-	private sealed class Runner : IBacktestRunner
-	{
-		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
-		{
-			var trades = new List<ExecutedTrade>();
-			var equity = new List<EquityPoint>();
-			var money = 100_000m;
-
-			for (var i = 0; i < 60; i++)
-			{
-				var entry = request.Bars.From.AddHours(i);
-				var profit = i % 3 == 0 ? -8m : 12m;
-
-				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
-					100m + profit / 10m, 10m, 0.5m, 0.5m));
-
-				money += profit;
-				equity.Add(new(entry.AddMinutes(25), money));
-			}
-
-			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 120));
-		}
-	}
 
 	private string _root;
 	private SqliteProjectStore _store;
@@ -263,39 +221,6 @@ public class CompletionServiceTests : OdysseusTestBase
 		AreEqual("NVDA", listed[0].Symbol);
 	}
 
-	/// <summary>A project holding a candidate measured on the open data and, by default, the closed.</summary>
-	private async Task<(ProjectId Project, CandidateId Candidate)> MeasuredAsync(bool closed = true)
-	{
-		var created = await _projects.CreateProjectAsync(
-			"completion", Guid.NewGuid().ToString("n"), Actors.User, CancellationToken);
-
-		var project = created.Id;
-
-		var bars = new Dictionary<string, IReadOnlyList<Candle>> { ["NVDA"] = Bars() };
-		var imported = DatasetBuilder.Build(bars, TimeSpan.FromMinutes(5), "test", isSynthetic: false);
-
-		await _datasets.SaveAsync(project, imported, CancellationToken);
-
-		var opened = await _store.OpenAsync(project, CancellationToken);
-
-		await _store.UpdateAsync(opened.WithDataset(imported.Manifest.Id, DateTime.UtcNow), CancellationToken);
-
-		var name = Guid.NewGuid().ToString("n")[..8];
-		var spec = await _specs.AddAsync(project, Spec(name), Actors.Agent, DateTime.UtcNow, CancellationToken);
-		var built = await _candidates.BuildAsync(project, spec.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
-
-		await _evaluations.MeasureAsync(
-			project, built.Id, "NVDA", null, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
-
-		if (closed)
-		{
-			await _closed.MeasureAsync(
-				project, built.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
-		}
-
-		return (project, built.Id);
-	}
-
 	/// <summary>Enough bars for a split with something in every slice.</summary>
 	private static IReadOnlyList<Candle> Bars()
 	{
@@ -340,4 +265,69 @@ public class CompletionServiceTests : OdysseusTestBase
 		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
 		}
 		""";
+
+	/// <summary>A project holding a candidate measured on the open data and, by default, the closed.</summary>
+	private async Task<(ProjectId Project, CandidateId Candidate)> MeasuredAsync(bool closed = true)
+	{
+		var created = await _projects.CreateProjectAsync(
+			"completion", Guid.NewGuid().ToString("n"), Actors.User, CancellationToken);
+
+		var project = created.Id;
+
+		var bars = new Dictionary<string, IReadOnlyList<Candle>> { ["NVDA"] = Bars() };
+		var imported = DatasetBuilder.Build(bars, TimeSpan.FromMinutes(5), "test", isSynthetic: false);
+
+		await _datasets.SaveAsync(project, imported, CancellationToken);
+
+		var opened = await _store.OpenAsync(project, CancellationToken);
+
+		await _store.UpdateAsync(opened.WithDataset(imported.Manifest.Id, DateTime.UtcNow), CancellationToken);
+
+		var name = Guid.NewGuid().ToString("n")[..8];
+		var spec = await _specs.AddAsync(project, Spec(name), Actors.Agent, DateTime.UtcNow, CancellationToken);
+		var built = await _candidates.BuildAsync(project, spec.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
+
+		await _evaluations.MeasureAsync(
+			project, built.Id, "NVDA", null, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
+
+		if (closed)
+		{
+			await _closed.MeasureAsync(
+				project, built.Id, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken);
+		}
+
+		return (project, built.Id);
+	}
+
+	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
+	private sealed class Builder : IStrategyBuilder
+	{
+		public BuiltStrategy Build(StrategySpec spec)
+			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
+	}
+
+	/// <summary>A runner that reports the same modest, profitable run whatever it is handed.</summary>
+	private sealed class Runner : IBacktestRunner
+	{
+		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
+		{
+			var trades = new List<ExecutedTrade>();
+			var equity = new List<EquityPoint>();
+			var money = 100_000m;
+
+			for (var i = 0; i < 60; i++)
+			{
+				var entry = request.Bars.From.AddHours(i);
+				var profit = i % 3 == 0 ? -8m : 12m;
+
+				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
+					100m + profit / 10m, 10m, 0.5m, 0.5m));
+
+				money += profit;
+				equity.Add(new(entry.AddMinutes(25), money));
+			}
+
+			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 120));
+		}
+	}
 }

@@ -1,11 +1,5 @@
 namespace Odysseus.Application;
 
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// Appends and reads the permanent record of what happened in a project.
 /// </summary>

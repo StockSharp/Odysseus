@@ -1,14 +1,9 @@
 namespace Odysseus.Broker.Tests;
 
-using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
 using Odysseus.Platform;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Downloading history through a real connector, against a real broker.

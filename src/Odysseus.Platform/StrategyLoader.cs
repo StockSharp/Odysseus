@@ -1,14 +1,10 @@
 namespace Odysseus.Platform;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 using Ecng.Common;
 
 using StockSharp.Algo.Strategies;
-using StockSharp.Messages;
 
 /// <summary>
 /// Builds a running strategy out of a compiled candidate.

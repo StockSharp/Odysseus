@@ -1,8 +1,5 @@
 namespace Odysseus.Engine;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 
 /// <summary>
@@ -52,6 +49,9 @@ public sealed record WorkerOptions(
 	/// </remarks>
 	public const string WorkerFolder = "worker";
 
+	private static string Extension
+		=> RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
+
 	/// <summary>
 	/// The options a server starts with, with the worker looked for beside the host.
 	/// </summary>
@@ -87,7 +87,4 @@ public sealed record WorkerOptions(
 		// A framework-dependent build without an apphost, which is what a container image often carries.
 		return Path.Combine(folder, WorkerName + ".dll");
 	}
-
-	private static string Extension
-		=> RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
 }

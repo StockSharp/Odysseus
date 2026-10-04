@@ -1,19 +1,10 @@
 namespace Odysseus.Spec.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Json.Schema;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Holding the published schema against the code it claims to describe.
@@ -31,6 +22,89 @@ using Odysseus.TestKit;
 [TestClass]
 public class SchemaContractTests : OdysseusTestBase
 {
+	private static readonly Lazy<JsonSchema> _specification = new(() => JsonSchema.FromText(
+		File.ReadAllText(Path.Combine(SchemaDirectory, "strategy-spec.schema.json"))));
+
+	private static readonly EvaluationOptions _strict = new() { OutputFormat = OutputFormat.List };
+
+	// Every kind the converter can write, in one document, nested where they really appear.
+	private const string EveryKind = """
+		{
+		  "name": "Every kind",
+		  "thesis": "A specification exercising the whole expression vocabulary at once.",
+		  "allowLong": true,
+		  "allowShort": true,
+		  "timeFrame": "00:05:00",
+		  "warmupBars": 61,
+		  "entries": [
+		    {
+		      "id": "e1",
+		      "direction": "Long",
+		      "condition": {
+		        "kind": "All",
+		        "conditions": [
+		          { "kind": "Any", "conditions": [
+		            { "kind": "Position", "state": "Flat" },
+		            { "kind": "Not", "condition": { "kind": "Position", "state": "Short" } }
+		          ] },
+		          { "kind": "Session", "notBefore": "09:45", "notAfter": "15:30" },
+		          { "kind": "Cross",
+		            "left": { "kind": "Field", "field": "Close" },
+		            "direction": "Above",
+		            "right": { "kind": "Indicator", "name": "sma",
+		                       "length": { "kind": "Parameter", "name": "Window" }, "source": "Close", "offset": 1 } },
+		          { "kind": "Compare",
+		            "left": { "kind": "Abs", "value": {
+		              "kind": "Subtract", "operands": [
+		                { "kind": "Field", "field": "Close" },
+		                { "kind": "Field", "field": "Open", "offset": 1 }
+		              ] } },
+		            "operator": "GreaterThan",
+		            "right": { "kind": "Multiply", "operands": [
+		              { "kind": "Constant", "value": 0.5 },
+		              { "kind": "Indicator", "name": "atr", "length": { "kind": "Constant", "value": 14 } }
+		            ] } },
+		          { "kind": "Compare",
+		            "left": { "kind": "Min", "operands": [
+		              { "kind": "Field", "field": "High" },
+		              { "kind": "Add", "operands": [
+		                { "kind": "Field", "field": "Low" },
+		                { "kind": "Constant", "value": 1 } ] } ] },
+		            "operator": "LessOrEqual",
+		            "right": { "kind": "Max", "operands": [
+		              { "kind": "Divide", "operands": [
+		                { "kind": "Field", "field": "Volume" },
+		                { "kind": "Constant", "value": 2 } ] },
+		              { "kind": "Indicator", "name": "volumeSma",
+		                "length": { "kind": "Constant", "value": 20 } } ] } }
+		        ]
+		      }
+		    }
+		  ],
+		  "exits": [
+		    { "id": "x1", "kind": "Condition", "direction": "Long",
+		      "condition": { "kind": "Compare",
+		        "left": { "kind": "Field", "field": "Close" },
+		        "operator": "LessThan",
+		        "right": { "kind": "Indicator", "name": "lowest",
+		                   "length": { "kind": "Constant", "value": 10 }, "source": "Low", "offset": 1 } } },
+		    { "id": "x2", "kind": "AtrStop", "direction": "Long",
+		      "length": { "kind": "Constant", "value": 14 },
+		      "multiplier": { "kind": "Constant", "value": 2 } },
+		    { "id": "x3", "kind": "AtrTarget", "direction": "Long",
+		      "length": { "kind": "Constant", "value": 14 },
+		      "multiplier": { "kind": "Constant", "value": 3 } },
+		    { "id": "x4", "kind": "TimeExit", "direction": "Long",
+		      "length": { "kind": "Constant", "value": 12 } },
+		    { "id": "x5", "kind": "SessionEnd", "direction": "Long" }
+		  ],
+		  "parameters": [
+		    { "name": "Window", "type": "Integer", "default": 20, "minimum": 10, "maximum": 60, "step": 5 }
+		  ],
+		  "risk": { "maxPositionPercent": 0.1, "maxDailyLossPercent": 0.02 }
+		}
+		""";
+
 	private static string SchemaDirectory => Path.Combine(RepositoryRoot, "schemas");
 
 	private static string SampleDirectory => Path.Combine(RepositoryRoot, "samples");
@@ -38,11 +112,6 @@ public class SchemaContractTests : OdysseusTestBase
 	// Built once however many methods run at once: the library registers a schema by its identifier, and
 	// registering the same one twice throws.
 	private static JsonSchema Specification => _specification.Value;
-
-	private static readonly Lazy<JsonSchema> _specification = new(() => JsonSchema.FromText(
-		File.ReadAllText(Path.Combine(SchemaDirectory, "strategy-spec.schema.json"))));
-
-	private static readonly EvaluationOptions _strict = new() { OutputFormat = OutputFormat.List };
 
 	/// <summary>
 	/// The specification the repository ships as its worked example is one the server accepts and one
@@ -271,82 +340,4 @@ public class SchemaContractTests : OdysseusTestBase
 				break;
 		}
 	}
-
-	// Every kind the converter can write, in one document, nested where they really appear.
-	private const string EveryKind = """
-		{
-		  "name": "Every kind",
-		  "thesis": "A specification exercising the whole expression vocabulary at once.",
-		  "allowLong": true,
-		  "allowShort": true,
-		  "timeFrame": "00:05:00",
-		  "warmupBars": 61,
-		  "entries": [
-		    {
-		      "id": "e1",
-		      "direction": "Long",
-		      "condition": {
-		        "kind": "All",
-		        "conditions": [
-		          { "kind": "Any", "conditions": [
-		            { "kind": "Position", "state": "Flat" },
-		            { "kind": "Not", "condition": { "kind": "Position", "state": "Short" } }
-		          ] },
-		          { "kind": "Session", "notBefore": "09:45", "notAfter": "15:30" },
-		          { "kind": "Cross",
-		            "left": { "kind": "Field", "field": "Close" },
-		            "direction": "Above",
-		            "right": { "kind": "Indicator", "name": "sma",
-		                       "length": { "kind": "Parameter", "name": "Window" }, "source": "Close", "offset": 1 } },
-		          { "kind": "Compare",
-		            "left": { "kind": "Abs", "value": {
-		              "kind": "Subtract", "operands": [
-		                { "kind": "Field", "field": "Close" },
-		                { "kind": "Field", "field": "Open", "offset": 1 }
-		              ] } },
-		            "operator": "GreaterThan",
-		            "right": { "kind": "Multiply", "operands": [
-		              { "kind": "Constant", "value": 0.5 },
-		              { "kind": "Indicator", "name": "atr", "length": { "kind": "Constant", "value": 14 } }
-		            ] } },
-		          { "kind": "Compare",
-		            "left": { "kind": "Min", "operands": [
-		              { "kind": "Field", "field": "High" },
-		              { "kind": "Add", "operands": [
-		                { "kind": "Field", "field": "Low" },
-		                { "kind": "Constant", "value": 1 } ] } ] },
-		            "operator": "LessOrEqual",
-		            "right": { "kind": "Max", "operands": [
-		              { "kind": "Divide", "operands": [
-		                { "kind": "Field", "field": "Volume" },
-		                { "kind": "Constant", "value": 2 } ] },
-		              { "kind": "Indicator", "name": "volumeSma",
-		                "length": { "kind": "Constant", "value": 20 } } ] } }
-		        ]
-		      }
-		    }
-		  ],
-		  "exits": [
-		    { "id": "x1", "kind": "Condition", "direction": "Long",
-		      "condition": { "kind": "Compare",
-		        "left": { "kind": "Field", "field": "Close" },
-		        "operator": "LessThan",
-		        "right": { "kind": "Indicator", "name": "lowest",
-		                   "length": { "kind": "Constant", "value": 10 }, "source": "Low", "offset": 1 } } },
-		    { "id": "x2", "kind": "AtrStop", "direction": "Long",
-		      "length": { "kind": "Constant", "value": 14 },
-		      "multiplier": { "kind": "Constant", "value": 2 } },
-		    { "id": "x3", "kind": "AtrTarget", "direction": "Long",
-		      "length": { "kind": "Constant", "value": 14 },
-		      "multiplier": { "kind": "Constant", "value": 3 } },
-		    { "id": "x4", "kind": "TimeExit", "direction": "Long",
-		      "length": { "kind": "Constant", "value": 12 } },
-		    { "id": "x5", "kind": "SessionEnd", "direction": "Long" }
-		  ],
-		  "parameters": [
-		    { "name": "Window", "type": "Integer", "default": 20, "minimum": 10, "maximum": 60, "step": 5 }
-		  ],
-		  "risk": { "maxPositionPercent": 0.1, "maxDailyLossPercent": 0.02 }
-		}
-		""";
 }

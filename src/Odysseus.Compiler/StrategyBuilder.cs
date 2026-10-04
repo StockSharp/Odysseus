@@ -1,11 +1,5 @@
 namespace Odysseus.Compiler;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using Microsoft.CodeAnalysis;
-
 using Odysseus.Application;
 using Odysseus.CodeGen;
 using Odysseus.Spec;

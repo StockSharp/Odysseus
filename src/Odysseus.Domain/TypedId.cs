@@ -1,6 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
 using System.Text.RegularExpressions;
 
 /// <summary>

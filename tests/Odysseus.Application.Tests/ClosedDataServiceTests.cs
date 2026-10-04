@@ -1,21 +1,11 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Persistence;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Measuring a candidate against the part of the history it was never shown.
@@ -29,48 +19,6 @@ using Odysseus.TestKit;
 public class ClosedDataServiceTests : OdysseusTestBase
 {
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 30, 0, DateTimeKind.Utc);
-
-	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
-	private sealed class Builder : IStrategyBuilder
-	{
-		public BuiltStrategy Build(StrategySpec spec)
-			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
-	}
-
-	/// <summary>A runner that reports the same modest, profitable run whatever it is handed.</summary>
-	private sealed class Runner : IBacktestRunner
-	{
-		public int Runs { get; private set; }
-
-		/// <summary>How many runs to allow before behaving like a client that has gone away.</summary>
-		public int GiveUpAfter { get; set; } = int.MaxValue;
-
-		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
-		{
-			Runs++;
-
-			if (Runs > GiveUpAfter)
-				throw new OperationCanceledException();
-
-			var trades = new List<ExecutedTrade>();
-			var equity = new List<EquityPoint>();
-			var money = 100_000m;
-
-			for (var i = 0; i < 60; i++)
-			{
-				var entry = request.Bars.From.AddHours(i);
-				var profit = i % 3 == 0 ? -8m : 12m;
-
-				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
-					100m + profit / 10m, 10m, 0.5m, 0.5m));
-
-				money += profit;
-				equity.Add(new(entry.AddMinutes(25), money));
-			}
-
-			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 120));
-		}
-	}
 
 	private string _root;
 	private SqliteProjectStore _store;
@@ -164,6 +112,10 @@ public class ClosedDataServiceTests : OdysseusTestBase
 		}
 	}
 
+	/// <summary>
+	/// Closed history one project measured on is spent for every project: another one asking for the same
+	/// stretch is refused, and the refusal says who spent it.
+	/// </summary>
 	[TestMethod]
 	public async Task TheSameClosedHistoryCannotBeAskedTwice()
 	{
@@ -486,6 +438,66 @@ public class ClosedDataServiceTests : OdysseusTestBase
 			$"the refusal does not say it was already measured: {refusal.Message}");
 	}
 
+	/// <summary>A measurement on the open data, standing in for one the service would have taken.</summary>
+	private static Measurement Measured(CandidateId candidate)
+		=> new(candidate, DataSlices.Validation, Nothing(), Nothing(), Nothing(), [1m, 1m, 1m], [], new(1, 1, 0), DateTime.UtcNow);
+
+	private static RunMetrics Nothing()
+		=> new(
+			new(0m, 0m, null, 0m),
+			new(0m, 0m, null, 0m),
+			new(0m, 0m),
+			new(0m, 0m, null),
+			new(0, 0m, 0m),
+			new(0m, 0m),
+			new(0m, 0m, "", ""),
+			0);
+
+	/// <summary>Enough bars for a split with something in every slice.</summary>
+	private static IReadOnlyList<Candle> Bars()
+	{
+		var bars = new List<Candle>();
+		var time = _open;
+
+		for (var i = 0; i < 3_000; i++)
+		{
+			var wave = (decimal)Math.Sin(i * 2 * Math.PI / 60);
+			var close = 100m + Math.Round(5m * wave, 2);
+			var open = bars.Count == 0 ? close : bars[^1].Close;
+
+			bars.Add(new(time, open, Math.Max(open, close) + 0.05m, Math.Min(open, close) - 0.05m, close, 10_000m));
+
+			time = time.AddMinutes(5);
+
+			if (time.TimeOfDay >= TimeSpan.FromHours(21))
+				time = time.Date.AddDays(time.DayOfWeek == DayOfWeek.Friday ? 3 : 1).Add(_open.TimeOfDay);
+		}
+
+		return bars;
+	}
+
+	private static string Spec(string name)
+		=> $$"""
+		{
+		  "name": "Above its average {{name}}",
+		  "thesis": "A price above its own recent average keeps going for a few bars.",
+		  "allowLong": true,
+		  "allowShort": false,
+		  "timeFrame": "00:05:00",
+		  "warmupBars": 45,
+		  "entries": [
+		    { "id": "e1", "direction": "Long", "condition": {
+		        "kind": "Compare",
+		        "left": { "kind": "Field", "field": "Close" },
+		        "operator": "GreaterThan",
+		        "right": { "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 20 }, "source": "Close" } } }
+		  ],
+		  "exits": [ { "id": "x1", "kind": "TimeExit", "direction": "Long", "length": { "kind": "Constant", "value": 5 } } ],
+		  "parameters": [],
+		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
+		}
+		""";
+
 	/// <summary>A project holding a candidate that has been measured and is ready for the closed data.</summary>
 	private async Task<(ProjectId Project, CandidateId Candidate)> FinalistAsync(
 		bool synthetic = false,
@@ -556,63 +568,45 @@ public class ClosedDataServiceTests : OdysseusTestBase
 		return built.Id;
 	}
 
-	/// <summary>A measurement on the open data, standing in for one the service would have taken.</summary>
-	private static Measurement Measured(CandidateId candidate)
-		=> new(candidate, DataSlices.Validation, Nothing(), Nothing(), Nothing(), [1m, 1m, 1m], [], new(1, 1, 0), DateTime.UtcNow);
-
-	private static RunMetrics Nothing()
-		=> new(
-			new(0m, 0m, null, 0m),
-			new(0m, 0m, null, 0m),
-			new(0m, 0m),
-			new(0m, 0m, null),
-			new(0, 0m, 0m),
-			new(0m, 0m),
-			new(0m, 0m, "", ""),
-			0);
-
-	/// <summary>Enough bars for a split with something in every slice.</summary>
-	private static IReadOnlyList<Candle> Bars()
+	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
+	private sealed class Builder : IStrategyBuilder
 	{
-		var bars = new List<Candle>();
-		var time = _open;
-
-		for (var i = 0; i < 3_000; i++)
-		{
-			var wave = (decimal)Math.Sin(i * 2 * Math.PI / 60);
-			var close = 100m + Math.Round(5m * wave, 2);
-			var open = bars.Count == 0 ? close : bars[^1].Close;
-
-			bars.Add(new(time, open, Math.Max(open, close) + 0.05m, Math.Min(open, close) - 0.05m, close, 10_000m));
-
-			time = time.AddMinutes(5);
-
-			if (time.TimeOfDay >= TimeSpan.FromHours(21))
-				time = time.Date.AddDays(time.DayOfWeek == DayOfWeek.Friday ? 3 : 1).Add(_open.TimeOfDay);
-		}
-
-		return bars;
+		public BuiltStrategy Build(StrategySpec spec)
+			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
 	}
 
-	private static string Spec(string name)
-		=> $$"""
+	/// <summary>A runner that reports the same modest, profitable run whatever it is handed.</summary>
+	private sealed class Runner : IBacktestRunner
+	{
+		public int Runs { get; private set; }
+
+		/// <summary>How many runs to allow before behaving like a client that has gone away.</summary>
+		public int GiveUpAfter { get; set; } = int.MaxValue;
+
+		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
 		{
-		  "name": "Above its average {{name}}",
-		  "thesis": "A price above its own recent average keeps going for a few bars.",
-		  "allowLong": true,
-		  "allowShort": false,
-		  "timeFrame": "00:05:00",
-		  "warmupBars": 45,
-		  "entries": [
-		    { "id": "e1", "direction": "Long", "condition": {
-		        "kind": "Compare",
-		        "left": { "kind": "Field", "field": "Close" },
-		        "operator": "GreaterThan",
-		        "right": { "kind": "Indicator", "name": "sma", "length": { "kind": "Constant", "value": 20 }, "source": "Close" } } }
-		  ],
-		  "exits": [ { "id": "x1", "kind": "TimeExit", "direction": "Long", "length": { "kind": "Constant", "value": 5 } } ],
-		  "parameters": [],
-		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
+			Runs++;
+
+			if (Runs > GiveUpAfter)
+				throw new OperationCanceledException();
+
+			var trades = new List<ExecutedTrade>();
+			var equity = new List<EquityPoint>();
+			var money = 100_000m;
+
+			for (var i = 0; i < 60; i++)
+			{
+				var entry = request.Bars.From.AddHours(i);
+				var profit = i % 3 == 0 ? -8m : 12m;
+
+				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
+					100m + profit / 10m, 10m, 0.5m, 0.5m));
+
+				money += profit;
+				equity.Add(new(entry.AddMinutes(25), money));
+			}
+
+			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 120));
 		}
-		""";
+	}
 }

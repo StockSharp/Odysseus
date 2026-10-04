@@ -1,17 +1,6 @@
 namespace Odysseus.Engine.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Engine;
-using Odysseus.TestKit;
 
 /// <summary>
 /// What a session makes of a process it did not start.
@@ -34,6 +23,9 @@ public class RunnerLauncherTests : OdysseusTestBase
 	private string _two;
 	private string _other;
 
+	private static RunnerConnectorPolicy Policy
+		=> new(Path.Combine(Path.GetTempPath(), "odysseus-connectors"), ["https://example.invalid"], ["StockSharp."]);
+
 	/// <summary>Makes a projects root of its own, and the deployment identifiers this test will use.</summary>
 	[TestInitialize]
 	public void CreateRoot()
@@ -43,21 +35,6 @@ public class RunnerLauncherTests : OdysseusTestBase
 		_two = Id("two");
 		_other = Id("other");
 	}
-
-	/// <summary>
-	/// A deployment identifier of this test's own.
-	/// </summary>
-	/// <param name="stem">What the identifier is for, so a failure names the runner it means.</param>
-	/// <returns>The identifier.</returns>
-	/// <remarks>
-	/// Fresh per test rather than a literal shared with the test beside it. A runner's pipe name is
-	/// derived from the deployment and a named pipe is machine-wide, so two tests holding one identifier
-	/// are two processes fighting over one pipe - and the loser reports the winner's runner, which is a
-	/// situation the product cannot be in. Identifiers are issued (<c>dep_</c> and a GUID) and no two
-	/// deployments carry the same one, so unique here is what the product does rather than a precaution.
-	/// </remarks>
-	private static string Id(string stem)
-		=> $"dep_{stem}_{Guid.NewGuid():n}";
 
 	/// <summary>Removes it, and anything it left running.</summary>
 	[TestCleanup]
@@ -407,20 +384,20 @@ public class RunnerLauncherTests : OdysseusTestBase
 		IsTrue(File.Exists(home.AssemblyFile), "the assembly being traded was not written into the home.");
 	}
 
-	private static RunnerConnectorPolicy Policy
-		=> new(Path.Combine(Path.GetTempPath(), "odysseus-connectors"), ["https://example.invalid"], ["StockSharp."]);
-
-	private RunnerRegistry Registry() => new(_root, SystemProcessProbe.Instance);
-
-	private RunnerLauncher Launcher()
-	{
-		var stub = Stub();
-
-		if (stub is null)
-			Fail("The misbehaving runner was not found where the build puts it. This project builds it, so its absence is a broken build or a wrong path.");
-
-		return new(Options(stub), Registry(), Policy, "stub-engine");
-	}
+	/// <summary>
+	/// A deployment identifier of this test's own.
+	/// </summary>
+	/// <param name="stem">What the identifier is for, so a failure names the runner it means.</param>
+	/// <returns>The identifier.</returns>
+	/// <remarks>
+	/// Fresh per test rather than a literal shared with the test beside it. A runner's pipe name is
+	/// derived from the deployment and a named pipe is machine-wide, so two tests holding one identifier
+	/// are two processes fighting over one pipe - and the loser reports the winner's runner, which is a
+	/// situation the product cannot be in. Identifiers are issued (<c>dep_</c> and a GUID) and no two
+	/// deployments carry the same one, so unique here is what the product does rather than a precaution.
+	/// </remarks>
+	private static string Id(string stem)
+		=> $"dep_{stem}_{Guid.NewGuid():n}";
 
 	/// <summary>
 	/// Deadlines short enough that a test which is meant to give up gives up quickly. Everything here is
@@ -448,6 +425,51 @@ public class RunnerLauncherTests : OdysseusTestBase
 			10m,
 			new("StockSharp.Stub", "1.0.0", string.Empty, null),
 			string.Empty);
+
+	private static void Kill(int processId)
+	{
+		try
+		{
+			using var process = Process.GetProcessById(processId);
+
+			process.Kill(entireProcessTree: true);
+		}
+		catch (Exception error) when (error is ArgumentException or InvalidOperationException)
+		{
+			// It had already gone, which is the outcome that was wanted.
+		}
+	}
+
+	/// <summary>
+	/// Where the misbehaving runner was built. It is reached by path rather than by reference, which is
+	/// the whole point of a runner.
+	/// </summary>
+	private static string Stub()
+	{
+		var configuration = AppContext.BaseDirectory.Contains(
+			$"{Path.DirectorySeparatorChar}Debug{Path.DirectorySeparatorChar}",
+			StringComparison.OrdinalIgnoreCase)
+			? "Debug"
+			: "Release";
+
+		var candidate = Path.Combine(
+			RepositoryRoot, "tests", "Odysseus.RunnerStub", "bin", configuration, "net10.0",
+			OperatingSystem.IsWindows() ? "Odysseus.RunnerStub.exe" : "Odysseus.RunnerStub");
+
+		return File.Exists(candidate) ? candidate : null;
+	}
+
+	private RunnerRegistry Registry() => new(_root, SystemProcessProbe.Instance);
+
+	private RunnerLauncher Launcher()
+	{
+		var stub = Stub();
+
+		if (stub is null)
+			Fail("The misbehaving runner was not found where the build puts it. This project builds it, so its absence is a broken build or a wrong path.");
+
+		return new(Options(stub), Registry(), Policy, "stub-engine");
+	}
 
 	/// <summary>
 	/// Writes a home the stub can be started against directly, for the cases where the launcher must not
@@ -514,38 +536,5 @@ public class RunnerLauncherTests : OdysseusTestBase
 		}
 
 		Fail($"The stub never wrote a record into {home.Directory}.");
-	}
-
-	private static void Kill(int processId)
-	{
-		try
-		{
-			using var process = Process.GetProcessById(processId);
-
-			process.Kill(entireProcessTree: true);
-		}
-		catch (Exception error) when (error is ArgumentException or InvalidOperationException)
-		{
-			// It had already gone, which is the outcome that was wanted.
-		}
-	}
-
-	/// <summary>
-	/// Where the misbehaving runner was built. It is reached by path rather than by reference, which is
-	/// the whole point of a runner.
-	/// </summary>
-	private static string Stub()
-	{
-		var configuration = AppContext.BaseDirectory.Contains(
-			$"{Path.DirectorySeparatorChar}Debug{Path.DirectorySeparatorChar}",
-			StringComparison.OrdinalIgnoreCase)
-			? "Debug"
-			: "Release";
-
-		var candidate = Path.Combine(
-			RepositoryRoot, "tests", "Odysseus.RunnerStub", "bin", configuration, "net10.0",
-			OperatingSystem.IsWindows() ? "Odysseus.RunnerStub.exe" : "Odysseus.RunnerStub");
-
-		return File.Exists(candidate) ? candidate : null;
 	}
 }

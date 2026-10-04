@@ -1,7 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-
 /// <summary>
 /// Raised when a connector cannot be proven to be pointed at a paper venue.
 /// </summary>

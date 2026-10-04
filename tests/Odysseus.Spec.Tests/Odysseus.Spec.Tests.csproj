@@ -9,10 +9,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\Odysseus.TestKit\Odysseus.TestKit.csproj" />
 		<ProjectReference Include="..\..\src\Odysseus.Spec\Odysseus.Spec.csproj" />
 	</ItemGroup>

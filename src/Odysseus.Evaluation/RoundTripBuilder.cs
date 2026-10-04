@@ -109,6 +109,8 @@ public static class RoundTripBuilder
 		/// <summary>Whether the position has come back to flat, which ends the trade.</summary>
 		public bool IsFlat => _enteredVolume > 0 && Outstanding == 0;
 
+		public string Symbol { get; private set; }
+
 		public void Enter(Fill fill, decimal volume)
 		{
 			_enteredVolume += volume;
@@ -139,8 +141,6 @@ public static class RoundTripBuilder
 				_enteredVolume,
 				_commission,
 				_slippage);
-
-		public string Symbol { get; private set; }
 
 		// Costs are charged to the whole fill, so a fill split between closing one position and opening
 		// the next carries the part of them it used.

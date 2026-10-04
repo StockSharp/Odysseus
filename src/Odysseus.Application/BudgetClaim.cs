@@ -1,11 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// Allowance taken before the work, and given back when the work did not happen.
 /// </summary>

@@ -1,12 +1,5 @@
 namespace Odysseus.Domain.Tests;
 
-using System;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.TestKit;
-
 /// <summary>
 /// What a trade came to.
 /// </summary>

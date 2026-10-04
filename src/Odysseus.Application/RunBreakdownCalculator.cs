@@ -1,11 +1,7 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-
-using Odysseus.Domain;
 
 /// <summary>
 /// Cutting a run's result apart to see where it came from.
@@ -21,6 +17,9 @@ using Odysseus.Domain;
 /// </remarks>
 public static class RunBreakdownCalculator
 {
+	/// <summary>How many distinct holding times are worth naming one by one rather than grouping.</summary>
+	private const int FewHoldingTimes = 8;
+
 	/// <summary>
 	/// Measures where a run's result came from.
 	/// </summary>
@@ -75,9 +74,6 @@ public static class RunBreakdownCalculator
 		]);
 	}
 
-	/// <summary>How many distinct holding times are worth naming one by one rather than grouping.</summary>
-	private const int _fewHoldingTimes = 8;
-
 	private static IReadOnlyList<RunSegment> ByHolding(IReadOnlyList<ExecutedTrade> trades, decimal net)
 	{
 		var held = trades.Select(t => t.Holding).Distinct().OrderBy(h => h).ToArray();
@@ -86,7 +82,7 @@ public static class RunBreakdownCalculator
 		// is nothing to cut when every position was held exactly as long as every other. Cutting it anyway
 		// would split ties by whatever order they arrived in and hand back parts with different results,
 		// which reads as a finding about holding time and is an artefact of the sort.
-		if (held.Length <= _fewHoldingTimes)
+		if (held.Length <= FewHoldingTimes)
 		{
 			return held
 				.Select(h => Segment($"held {Describe(h)}", trades.Where(t => t.Holding == h).ToArray(), net))

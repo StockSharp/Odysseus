@@ -1,14 +1,5 @@
 namespace Odysseus.Evaluation.Tests;
 
-using System;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.Evaluation;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Turning the fills an engine reports into the round trips a result is measured on.
 /// </summary>

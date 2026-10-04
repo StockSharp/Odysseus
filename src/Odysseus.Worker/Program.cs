@@ -1,9 +1,5 @@
 namespace Odysseus.Worker;
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
 using Odysseus.Engine;
 
 /// <summary>

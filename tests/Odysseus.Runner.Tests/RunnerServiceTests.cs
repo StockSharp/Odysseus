@@ -1,18 +1,6 @@
 namespace Odysseus.Runner.Tests;
 
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Engine;
-using Odysseus.Runner;
-using Odysseus.TestKit;
 
 /// <summary>
 /// One deployment, for as long as it trades, without a broker anywhere near it.
@@ -497,42 +485,6 @@ public partial class RunnerServiceTests : OdysseusTestBase
 	}
 
 	/// <summary>
-	/// A home with the assembly already in it, because the launcher writes it before the runner starts and
-	/// the runner reads it rather than being handed it.
-	/// </summary>
-	/// <returns>The home.</returns>
-	private RunnerHome Home()
-	{
-		var home = new RunnerHome(Path.Combine(_root, "dep_one"), "dep_one");
-
-		home.Create();
-
-		File.WriteAllBytes(home.AssemblyFile, [1, 2, 3]);
-
-		return home;
-	}
-
-	private RunnerService Service(
-		TradingMandate mandate,
-		out Broker broker,
-		out RunnerHome home,
-		string account = "U-live",
-		bool prices = true,
-		string sessionAccount = null,
-		decimal quote = 100m)
-	{
-		home = Home();
-		broker = new(account, prices, sessionAccount, quote);
-
-		var service = new RunnerService(
-			home, Plan(), mandate, Confirmed(mandate), broker, "test-engine", new Clock());
-
-		service.Announce(new Probe());
-
-		return service;
-	}
-
-	/// <summary>
 	/// A person at a terminal who types the phrase the mandate is written around, which is what every
 	/// test that is not about the phrase itself needs to have happened.
 	/// </summary>
@@ -573,6 +525,42 @@ public partial class RunnerServiceTests : OdysseusTestBase
 			5_000m,
 			_now.AddDays(26),
 			"/etc/odysseus/mandate.json");
+
+	/// <summary>
+	/// A home with the assembly already in it, because the launcher writes it before the runner starts and
+	/// the runner reads it rather than being handed it.
+	/// </summary>
+	/// <returns>The home.</returns>
+	private RunnerHome Home()
+	{
+		var home = new RunnerHome(Path.Combine(_root, "dep_one"), "dep_one");
+
+		home.Create();
+
+		File.WriteAllBytes(home.AssemblyFile, [1, 2, 3]);
+
+		return home;
+	}
+
+	private RunnerService Service(
+		TradingMandate mandate,
+		out Broker broker,
+		out RunnerHome home,
+		string account = "U-live",
+		bool prices = true,
+		string sessionAccount = null,
+		decimal quote = 100m)
+	{
+		home = Home();
+		broker = new(account, prices, sessionAccount, quote);
+
+		var service = new RunnerService(
+			home, Plan(), mandate, Confirmed(mandate), broker, "test-engine", new Clock());
+
+		service.Announce(new Probe());
+
+		return service;
+	}
 
 	/// <summary>A person at a terminal who types whatever the test needs them to have typed.</summary>
 	private sealed class Terminal(string types) : IOperatorTerminal
@@ -635,6 +623,10 @@ public partial class RunnerServiceTests : OdysseusTestBase
 
 		public IReadOnlyList<string> Sources => ["https://example.invalid"];
 
+		private static ConnectorDescription Description { get; } = new(
+			"StockSharp.Example", "1.2.3", "sha", "Example.Adapter", "Example",
+			[], "key-secret", true, false, [], "connector:stocksharp.example@00000000");
+
 		public ValueTask<ConnectorDescription> InspectAsync(ConnectorChoice choice, CancellationToken cancellationToken)
 			=> ValueTask.FromResult(Description);
 
@@ -651,10 +643,6 @@ public partial class RunnerServiceTests : OdysseusTestBase
 
 		public ValueTask<IReadOnlyList<ConnectorDescription>> InstalledAsync(CancellationToken cancellationToken)
 			=> ValueTask.FromResult<IReadOnlyList<ConnectorDescription>>([Description]);
-
-		private static ConnectorDescription Description { get; } = new(
-			"StockSharp.Example", "1.2.3", "sha", "Example.Adapter", "Example",
-			[], "key-secret", true, false, [], "connector:stocksharp.example@00000000");
 	}
 
 	/// <summary>History that answers with one price, or with nothing at all.</summary>

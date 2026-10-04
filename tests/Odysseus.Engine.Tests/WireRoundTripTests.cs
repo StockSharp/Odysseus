@@ -1,17 +1,5 @@
 namespace Odysseus.Engine.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Engine;
-using Odysseus.TestKit;
-
 /// <summary>
 /// What crosses the process boundary, and whether it comes back the same.
 /// </summary>
@@ -135,18 +123,6 @@ public class WireRoundTripTests : OdysseusTestBase
 			"a pipe that closed cleanly was read as something.");
 	}
 
-	private async Task<T> RoundTripAsync<T>(T message)
-		where T : class
-	{
-		using var stream = new MemoryStream();
-
-		await WorkerProtocol.WriteAsync(stream, message, CancellationToken);
-
-		stream.Position = 0;
-
-		return await WorkerProtocol.ReadAsync<T>(stream, CancellationToken);
-	}
-
 	private static BacktestRequest Backtest()
 		=> new(
 			[1, 2, 3, 4, 5],
@@ -178,4 +154,16 @@ public class WireRoundTripTests : OdysseusTestBase
 
 	private static BarRange Bars()
 		=> new("projects/p1/datasets/ds_0/bars/development", _open, _open.AddMinutes(15), 3);
+
+	private async Task<T> RoundTripAsync<T>(T message)
+		where T : class
+	{
+		using var stream = new MemoryStream();
+
+		await WorkerProtocol.WriteAsync(stream, message, CancellationToken);
+
+		stream.Position = 0;
+
+		return await WorkerProtocol.ReadAsync<T>(stream, CancellationToken);
+	}
 }

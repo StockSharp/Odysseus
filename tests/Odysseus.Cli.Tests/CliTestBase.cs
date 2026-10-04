@@ -1,12 +1,6 @@
 namespace Odysseus.Cli.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Odysseus.Application;
 using Odysseus.Cli.Console;
@@ -113,6 +107,9 @@ public abstract class CliTestBase : OdysseusTestBase
 	private string _root;
 	private Workspace _workspace;
 
+	/// <summary>The hypothesis the README walks through, as it is published in the repository.</summary>
+	protected static string SampleHypothesis => Path.Combine(RepositoryRoot, "samples", "hypothesis.json");
+
 	/// <summary>The projects root this test works in.</summary>
 	protected string Root => _root;
 
@@ -121,9 +118,6 @@ public abstract class CliTestBase : OdysseusTestBase
 
 	/// <summary>The person the commands may ask something.</summary>
 	protected ScriptedTerminal Terminal { get; private set; }
-
-	/// <summary>The hypothesis the README walks through, as it is published in the repository.</summary>
-	protected static string SampleHypothesis => Path.Combine(RepositoryRoot, "samples", "hypothesis.json");
 
 	/// <summary>Opens a projects root of this test's own.</summary>
 	[TestInitialize]

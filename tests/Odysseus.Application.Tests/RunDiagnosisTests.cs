@@ -1,14 +1,5 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Saying why a run measured nothing.
 /// </summary>

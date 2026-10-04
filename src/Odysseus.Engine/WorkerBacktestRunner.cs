@@ -1,10 +1,6 @@
 namespace Odysseus.Engine;
 
-using System;
-using System.Threading;
 using System.Threading.Tasks;
-
-using Odysseus.Application;
 
 /// <summary>
 /// Runs a compiled candidate in the isolated worker.

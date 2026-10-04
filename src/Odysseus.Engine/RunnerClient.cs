@@ -1,12 +1,7 @@
 namespace Odysseus.Engine;
 
-using System;
-using System.IO;
 using System.IO.Pipes;
-using System.Threading;
 using System.Threading.Tasks;
-
-using Odysseus.Application;
 
 /// <summary>
 /// Raised when what answered the pipe is not the runner that was being looked for.
@@ -154,37 +149,6 @@ public sealed class RunnerClient : IAsyncDisposable
 		_gate.Dispose();
 	}
 
-	private async Task<RunnerAnswer> CallAsync(RunnerRequest request, TimeSpan deadline, CancellationToken cancellationToken)
-	{
-		ObjectDisposedException.ThrowIf(_disposed, this);
-
-		await _gate.WaitAsync(cancellationToken);
-
-		try
-		{
-			await WorkerProtocol.WriteAsync(_pipe, request, cancellationToken).WaitAsync(deadline, cancellationToken);
-
-			var answer = await WorkerProtocol.ReadAsync<RunnerAnswer>(_pipe, cancellationToken)
-				.WaitAsync(deadline, cancellationToken)
-				?? throw new IOException("The runner closed the connection without answering.");
-
-			// One request at a time on one connection, so an answer to another question is a connection
-			// out of step with itself. Discarded rather than reported: the numbers in it are another
-			// moment's, and a report is only worth having if it is of the thing that was asked about.
-			if (!string.Equals(answer.Id, request.Id, StringComparison.Ordinal))
-			{
-				throw new IOException(
-					$"The runner answered request '{answer.Id}' while it was being asked '{request.Id}'.");
-			}
-
-			return answer;
-		}
-		finally
-		{
-			_gate.Release();
-		}
-	}
-
 	private static RunnerAnswer Answered(RunnerAnswer answer)
 	{
 		if (!answer.Succeeded)
@@ -235,4 +199,35 @@ public sealed class RunnerClient : IAsyncDisposable
 	}
 
 	private static string NewId() => Guid.NewGuid().ToString("n")[..12];
+
+	private async Task<RunnerAnswer> CallAsync(RunnerRequest request, TimeSpan deadline, CancellationToken cancellationToken)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
+		await _gate.WaitAsync(cancellationToken);
+
+		try
+		{
+			await WorkerProtocol.WriteAsync(_pipe, request, cancellationToken).WaitAsync(deadline, cancellationToken);
+
+			var answer = await WorkerProtocol.ReadAsync<RunnerAnswer>(_pipe, cancellationToken)
+				.WaitAsync(deadline, cancellationToken)
+				?? throw new IOException("The runner closed the connection without answering.");
+
+			// One request at a time on one connection, so an answer to another question is a connection
+			// out of step with itself. Discarded rather than reported: the numbers in it are another
+			// moment's, and a report is only worth having if it is of the thing that was asked about.
+			if (!string.Equals(answer.Id, request.Id, StringComparison.Ordinal))
+			{
+				throw new IOException(
+					$"The runner answered request '{answer.Id}' while it was being asked '{request.Id}'.");
+			}
+
+			return answer;
+		}
+		finally
+		{
+			_gate.Release();
+		}
+	}
 }

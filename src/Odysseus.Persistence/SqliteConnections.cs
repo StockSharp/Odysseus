@@ -1,7 +1,5 @@
 namespace Odysseus.Persistence;
 
-using System.IO;
-
 using Microsoft.Data.Sqlite;
 
 /// <summary>

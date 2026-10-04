@@ -1,20 +1,10 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Persistence;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// What a search costs, and what asking for the same one twice costs.
@@ -35,101 +25,6 @@ public class OptimizationServiceTests : OdysseusTestBase
 	private const int WholeSearch = WorstCase + 1;
 
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 30, 0, DateTimeKind.Utc);
-
-	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
-	private sealed class Builder : IStrategyBuilder
-	{
-		public BuiltStrategy Build(StrategySpec spec)
-			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
-	}
-
-	/// <summary>A runner that reports the same modest run whatever it is handed.</summary>
-	private sealed class Runner : IBacktestRunner
-	{
-		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
-		{
-			var trades = new List<ExecutedTrade>();
-			var equity = new List<EquityPoint>();
-			var money = 100_000m;
-
-			for (var i = 0; i < 20; i++)
-			{
-				var entry = request.Bars.From.AddHours(i);
-
-				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
-					101m, 10m, 0.5m, 0.5m));
-
-				money += 10m;
-				equity.Add(new(entry.AddMinutes(25), money));
-			}
-
-			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 40));
-		}
-	}
-
-	/// <summary>
-	/// A search that reports a fixed table, counts how often it was asked, and can look at what the
-	/// project has been charged while it is running - which is the only moment the up-front claim is
-	/// visible from.
-	/// </summary>
-	private sealed class Optimizer : IStrategyOptimizer
-	{
-		public int Searches { get; private set; }
-
-		public Func<Task<int>> Spent { get; set; }
-
-		public int SpentWhenAsked { get; private set; } = -1;
-
-		public bool Breaks { get; set; }
-
-		/// <summary>What a walk-forward reports, window by window.</summary>
-		public IReadOnlyList<WalkForwardWindowResult> Windows { get; set; } = [];
-
-		/// <summary>The walk-forward that was asked for, so a test can see what it was handed.</summary>
-		public WalkForwardRequest WalkedForward { get; private set; }
-
-		/// <summary>How long a search occupies the machine.</summary>
-		public TimeSpan Takes { get; set; }
-
-		public async Task<IReadOnlyList<OptimizationTrial>> SearchAsync(
-			OptimizationRequest request,
-			CancellationToken cancellationToken)
-		{
-			Searches++;
-
-			if (Spent is not null)
-				SpentWhenAsked = await Spent();
-
-			if (Takes > TimeSpan.Zero)
-				await Task.Delay(Takes, cancellationToken);
-
-			if (Breaks)
-				throw new InvalidOperationException("The search broke half way through.");
-
-			IReadOnlyList<OptimizationTrial> trials =
-			[
-				new(new Dictionary<string, decimal>(StringComparer.Ordinal) { ["length"] = 20m }, 3m, 300m, 1m, 40),
-				new(new Dictionary<string, decimal>(StringComparer.Ordinal) { ["length"] = 30m }, 1m, 100m, 2m, 30),
-			];
-
-			return trials;
-		}
-
-		public async Task<IReadOnlyList<WalkForwardWindowResult>> WalkForwardAsync(
-			WalkForwardRequest request,
-			CancellationToken cancellationToken)
-		{
-			WalkedForward = request;
-
-			if (Takes > TimeSpan.Zero)
-				await Task.Delay(Takes, cancellationToken);
-
-			if (Breaks)
-				throw new InvalidOperationException("The walk-forward broke half way through.");
-
-			return Windows;
-		}
-	}
 
 	private string _root;
 	private SqliteProjectStore _store;
@@ -404,6 +299,50 @@ public class OptimizationServiceTests : OdysseusTestBase
 		AreEqual(1, await LeftAsync(project), "the refusal changed what was left.");
 	}
 
+	private static IReadOnlyList<Candle> Bars()
+	{
+		var bars = new List<Candle>();
+		var time = _open;
+
+		for (var i = 0; i < 2_000; i++)
+		{
+			var wave = (decimal)Math.Sin(i * 2 * Math.PI / 60);
+			var close = 100m + Math.Round(5m * wave, 2);
+			var open = bars.Count == 0 ? close : bars[^1].Close;
+
+			bars.Add(new(time, open, Math.Max(open, close) + 0.05m, Math.Min(open, close) - 0.05m, close, 10_000m));
+
+			time = time.AddMinutes(5);
+
+			if (time.TimeOfDay >= TimeSpan.FromHours(21))
+				time = time.Date.AddDays(time.DayOfWeek == DayOfWeek.Friday ? 3 : 1).Add(_open.TimeOfDay);
+		}
+
+		return bars;
+	}
+
+	private static string Spec()
+		=> $$"""
+		{
+		  "name": "Above its average {{Guid.NewGuid().ToString("n")[..8]}}",
+		  "thesis": "A price above its own recent average keeps going for a few bars.",
+		  "allowLong": true,
+		  "allowShort": false,
+		  "timeFrame": "00:05:00",
+		  "warmupBars": 45,
+		  "entries": [
+		    { "id": "e1", "direction": "Long", "condition": {
+		        "kind": "Compare",
+		        "left": { "kind": "Field", "field": "Close" },
+		        "operator": "GreaterThan",
+		        "right": { "kind": "Indicator", "name": "sma", "length": { "kind": "Parameter", "name": "length" }, "source": "Close" } } }
+		  ],
+		  "exits": [ { "id": "x1", "kind": "TimeExit", "direction": "Long", "length": { "kind": "Constant", "value": 5 } } ],
+		  "parameters": [ { "name": "length", "type": "Integer", "default": 20, "minimum": 10, "maximum": 40, "step": 5, "optimizable": true } ],
+		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
+		}
+		""";
+
 	private async Task LeaveOneAsync(ProjectId project)
 		=> IsTrue(await _store.TryClaimAsync(project, await LeftAsync(project) - 1, 0, CancellationToken));
 
@@ -449,47 +388,98 @@ public class OptimizationServiceTests : OdysseusTestBase
 		return (project, built.Id);
 	}
 
-	private static IReadOnlyList<Candle> Bars()
+	/// <summary>A builder that hands back something assembly-shaped, since nothing here runs it.</summary>
+	private sealed class Builder : IStrategyBuilder
 	{
-		var bars = new List<Candle>();
-		var time = _open;
-
-		for (var i = 0; i < 2_000; i++)
-		{
-			var wave = (decimal)Math.Sin(i * 2 * Math.PI / 60);
-			var close = 100m + Math.Round(5m * wave, 2);
-			var open = bars.Count == 0 ? close : bars[^1].Close;
-
-			bars.Add(new(time, open, Math.Max(open, close) + 0.05m, Math.Min(open, close) - 0.05m, close, 10_000m));
-
-			time = time.AddMinutes(5);
-
-			if (time.TimeOfDay >= TimeSpan.FromHours(21))
-				time = time.Date.AddDays(time.DayOfWeek == DayOfWeek.Friday ? 3 : 1).Add(_open.TimeOfDay);
-		}
-
-		return bars;
+		public BuiltStrategy Build(StrategySpec spec)
+			=> new("Generated", $"// source of {spec.Name}", $"source-{spec.Name}", [1, 2, 3], $"assembly-{spec.Name}", "1.0.0");
 	}
 
-	private static string Spec()
-		=> $$"""
+	/// <summary>A runner that reports the same modest run whatever it is handed.</summary>
+	private sealed class Runner : IBacktestRunner
+	{
+		public Task<BacktestOutcome> RunAsync(BacktestRequest request, CancellationToken cancellationToken)
 		{
-		  "name": "Above its average {{Guid.NewGuid().ToString("n")[..8]}}",
-		  "thesis": "A price above its own recent average keeps going for a few bars.",
-		  "allowLong": true,
-		  "allowShort": false,
-		  "timeFrame": "00:05:00",
-		  "warmupBars": 45,
-		  "entries": [
-		    { "id": "e1", "direction": "Long", "condition": {
-		        "kind": "Compare",
-		        "left": { "kind": "Field", "field": "Close" },
-		        "operator": "GreaterThan",
-		        "right": { "kind": "Indicator", "name": "sma", "length": { "kind": "Parameter", "name": "length" }, "source": "Close" } } }
-		  ],
-		  "exits": [ { "id": "x1", "kind": "TimeExit", "direction": "Long", "length": { "kind": "Constant", "value": 5 } } ],
-		  "parameters": [ { "name": "length", "type": "Integer", "default": 20, "minimum": 10, "maximum": 40, "step": 5, "optimizable": true } ],
-		  "risk": { "maxPositionPercent": 0.10, "maxDailyLossPercent": 0.02 }
+			var trades = new List<ExecutedTrade>();
+			var equity = new List<EquityPoint>();
+			var money = 100_000m;
+
+			for (var i = 0; i < 20; i++)
+			{
+				var entry = request.Bars.From.AddHours(i);
+
+				trades.Add(new($"t{i}", request.Symbol, TradeDirections.Long, entry, 100m, entry.AddMinutes(25),
+					101m, 10m, 0.5m, 0.5m));
+
+				money += 10m;
+				equity.Add(new(entry.AddMinutes(25), money));
+			}
+
+			return Task.FromResult(new BacktestOutcome(trades, equity, request.Bars.Count, 0, 40));
 		}
-		""";
+	}
+
+	/// <summary>
+	/// A search that reports a fixed table, counts how often it was asked, and can look at what the
+	/// project has been charged while it is running - which is the only moment the up-front claim is
+	/// visible from.
+	/// </summary>
+	private sealed class Optimizer : IStrategyOptimizer
+	{
+		public int Searches { get; private set; }
+
+		public Func<Task<int>> Spent { get; set; }
+
+		public int SpentWhenAsked { get; private set; } = -1;
+
+		public bool Breaks { get; set; }
+
+		/// <summary>What a walk-forward reports, window by window.</summary>
+		public IReadOnlyList<WalkForwardWindowResult> Windows { get; set; } = [];
+
+		/// <summary>The walk-forward that was asked for, so a test can see what it was handed.</summary>
+		public WalkForwardRequest WalkedForward { get; private set; }
+
+		/// <summary>How long a search occupies the machine.</summary>
+		public TimeSpan Takes { get; set; }
+
+		public async Task<IReadOnlyList<OptimizationTrial>> SearchAsync(
+			OptimizationRequest request,
+			CancellationToken cancellationToken)
+		{
+			Searches++;
+
+			if (Spent is not null)
+				SpentWhenAsked = await Spent();
+
+			if (Takes > TimeSpan.Zero)
+				await Task.Delay(Takes, cancellationToken);
+
+			if (Breaks)
+				throw new InvalidOperationException("The search broke half way through.");
+
+			IReadOnlyList<OptimizationTrial> trials =
+			[
+				new(new Dictionary<string, decimal>(StringComparer.Ordinal) { ["length"] = 20m }, 3m, 300m, 1m, 40),
+				new(new Dictionary<string, decimal>(StringComparer.Ordinal) { ["length"] = 30m }, 1m, 100m, 2m, 30),
+			];
+
+			return trials;
+		}
+
+		public async Task<IReadOnlyList<WalkForwardWindowResult>> WalkForwardAsync(
+			WalkForwardRequest request,
+			CancellationToken cancellationToken)
+		{
+			WalkedForward = request;
+
+			if (Takes > TimeSpan.Zero)
+				await Task.Delay(Takes, cancellationToken);
+
+			if (Breaks)
+				throw new InvalidOperationException("The walk-forward broke half way through.");
+
+			return Windows;
+		}
+	}
 }

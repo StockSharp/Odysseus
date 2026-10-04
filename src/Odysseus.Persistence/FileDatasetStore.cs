@@ -1,16 +1,6 @@
 namespace Odysseus.Persistence;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 
 /// <summary>
 /// Dataset descriptions kept beside their project as files, with the bars in the shared market-data storage.

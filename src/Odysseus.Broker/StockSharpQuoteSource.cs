@@ -1,14 +1,7 @@
 namespace Odysseus.Broker;
 
-using System;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Ecng.Common;
-
-using StockSharp.Messages;
-
-using Odysseus.Application;
 
 /// <summary>
 /// The current price of an instrument, read through whichever connector was selected.

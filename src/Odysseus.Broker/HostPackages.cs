@@ -1,13 +1,10 @@
 namespace Odysseus.Broker;
 
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
 using NuGet.Versioning;
 
-using Odysseus.Application;
 using Odysseus.Packages;
 
 /// <summary>
@@ -65,6 +62,16 @@ internal sealed class HostPackages
 	}
 
 	/// <summary>
+	/// Whether a package is part of the platform the host already carries.
+	/// </summary>
+	/// <param name="id">Package identifier.</param>
+	/// <returns>Whether the host owns it.</returns>
+	public static bool IsPlatform(string id)
+		=> id is not null &&
+			(id.StartsWith("StockSharp.", StringComparison.OrdinalIgnoreCase) ||
+				id.StartsWith("Ecng.", StringComparison.OrdinalIgnoreCase));
+
+	/// <summary>
 	/// Refuses a package that wants a newer platform than this server carries.
 	/// </summary>
 	/// <param name="package">The connector package that was fetched.</param>
@@ -100,16 +107,6 @@ internal sealed class HostPackages
 				"cannot bring a newer one with it. Upgrade this server, or choose an older build of the connector.");
 		}
 	}
-
-	/// <summary>
-	/// Whether a package is part of the platform the host already carries.
-	/// </summary>
-	/// <param name="id">Package identifier.</param>
-	/// <returns>Whether the host owns it.</returns>
-	public static bool IsPlatform(string id)
-		=> id is not null &&
-			(id.StartsWith("StockSharp.", StringComparison.OrdinalIgnoreCase) ||
-				id.StartsWith("Ecng.", StringComparison.OrdinalIgnoreCase));
 
 	private static IReadOnlyList<(string Id, NuGetVersion Version)> ReadOne(string file)
 	{

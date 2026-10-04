@@ -1,9 +1,5 @@
 namespace Odysseus.Packages;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -12,7 +8,6 @@ using NuGet.Common;
 using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
-using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
 /// <summary>
@@ -103,6 +98,46 @@ public sealed class PackageFetcher
 		return content is null ? null : Unpack(id, version, content);
 	}
 
+	private static NuGetVersion Choose(IEnumerable<NuGetVersion> offered, string version)
+	{
+		var all = offered?.ToArray() ?? [];
+
+		if (all.Length == 0)
+			return null;
+
+		if (string.IsNullOrWhiteSpace(version))
+			return all.Where(v => !v.IsPrerelease).OrderBy(v => v).LastOrDefault() ?? all.OrderBy(v => v).Last();
+
+		if (!NuGetVersion.TryParse(version, out var wanted))
+			throw new PackageUnavailableException($"'{version}' is not a version a package can have.");
+
+		return all.FirstOrDefault(v => v.Equals(wanted));
+	}
+
+	/// <summary>
+	/// Writes one file out of the package under a temporary name and moves it into place, so an
+	/// interrupted unpack leaves nothing that looks like a complete assembly.
+	/// </summary>
+	private static void Extract(PackageArchiveReader reader, string item, string path)
+	{
+		var temporary = path + ".partial";
+
+		using (var entry = reader.GetStream(item))
+		using (var file = File.Create(temporary))
+		{
+			entry.CopyTo(file);
+		}
+
+		File.Move(temporary, path, overwrite: true);
+	}
+
+	private static string Describe(IEnumerable<string> names)
+	{
+		var all = names.ToArray();
+
+		return all.Length == 0 ? "nothing" : string.Join(", ", all);
+	}
+
 	private async Task<(string Version, byte[] Content)> DownloadAsync(
 		string id,
 		string version,
@@ -150,22 +185,6 @@ public sealed class PackageFetcher
 		throw new PackageUnavailableException(
 			$"No source offers {id} {wanted}. Looked in {string.Join(", ", _sources.Sources)}." +
 			(failures.Count == 0 ? string.Empty : $" Errors: {string.Join("; ", failures)}."));
-	}
-
-	private static NuGetVersion Choose(IEnumerable<NuGetVersion> offered, string version)
-	{
-		var all = offered?.ToArray() ?? [];
-
-		if (all.Length == 0)
-			return null;
-
-		if (string.IsNullOrWhiteSpace(version))
-			return all.Where(v => !v.IsPrerelease).OrderBy(v => v).LastOrDefault() ?? all.OrderBy(v => v).Last();
-
-		if (!NuGetVersion.TryParse(version, out var wanted))
-			throw new PackageUnavailableException($"'{version}' is not a version a package can have.");
-
-		return all.FirstOrDefault(v => v.Equals(wanted));
 	}
 
 	/// <summary>
@@ -264,29 +283,5 @@ public sealed class PackageFetcher
 			folder,
 			assemblies,
 			requirements);
-	}
-
-	/// <summary>
-	/// Writes one file out of the package under a temporary name and moves it into place, so an
-	/// interrupted unpack leaves nothing that looks like a complete assembly.
-	/// </summary>
-	private static void Extract(PackageArchiveReader reader, string item, string path)
-	{
-		var temporary = path + ".partial";
-
-		using (var entry = reader.GetStream(item))
-		using (var file = File.Create(temporary))
-		{
-			entry.CopyTo(file);
-		}
-
-		File.Move(temporary, path, overwrite: true);
-	}
-
-	private static string Describe(IEnumerable<string> names)
-	{
-		var all = names.ToArray();
-
-		return all.Length == 0 ? "nothing" : string.Join(", ", all);
 	}
 }

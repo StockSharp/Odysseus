@@ -1,8 +1,6 @@
 namespace Odysseus.Server;
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 /// <summary>
 /// One page of a list, and what is left of it.
@@ -23,6 +21,15 @@ public static class Page
 
 	/// <summary>The most that can be asked for at once.</summary>
 	public const int MaximumSize = 500;
+
+	/// <summary>What to say about the two arguments, so every list says it the same way.</summary>
+	public const string OffsetDescription =
+		"How many to skip, for reading a long list a page at a time. Zero starts at the beginning; the " +
+		"answer says what to pass next.";
+
+	/// <summary>What to say about the size argument.</summary>
+	public const string LimitDescription =
+		"How many to return at once. Zero asks for the default of 50; the most that can be asked for is 500.";
 
 	/// <summary>
 	/// Takes one page and describes where it sits.
@@ -58,13 +65,4 @@ public static class Page
 			nextOffset = from + taken.Length < items.Count ? from + taken.Length : (int?)null,
 		});
 	}
-
-	/// <summary>What to say about the two arguments, so every list says it the same way.</summary>
-	public const string OffsetDescription =
-		"How many to skip, for reading a long list a page at a time. Zero starts at the beginning; the " +
-		"answer says what to pass next.";
-
-	/// <summary>What to say about the size argument.</summary>
-	public const string LimitDescription =
-		"How many to return at once. Zero asks for the default of 50; the most that can be asked for is 500.";
 }

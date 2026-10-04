@@ -1,13 +1,6 @@
 namespace Odysseus.Products.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.IO;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Products;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Where the installer is looked for, and what it is allowed to touch.
@@ -55,10 +48,11 @@ public class ProductInstallerOptionsTests : OdysseusTestBase
 		IsTrue(Path.IsPathRooted(beside), $"the place looked in is not an absolute path: {beside}");
 		AreEqual("installer", Path.GetFileName(Path.GetDirectoryName(beside)));
 
-		IsTrue(Path.GetFileNameWithoutExtension(beside) == "StockSharp.Installer.Console",
-			$"the console is looked for under another name: {beside}");
-
-		AreEqual(OperatingSystem.IsWindows() ? ".exe" : string.Empty, Path.GetExtension(beside));
+		// The whole name is compared, because the name has dots of its own: where the platform adds no
+		// extension, taking one off takes off a part of the name.
+		AreEqual(
+			OperatingSystem.IsWindows() ? "StockSharp.Installer.Console.exe" : "StockSharp.Installer.Console",
+			Path.GetFileName(beside));
 	}
 
 	/// <summary>
@@ -215,20 +209,46 @@ public class ProductInstallerOptionsTests : OdysseusTestBase
 	}
 
 	/// <summary>
-	/// The account is machine-wide and is not somewhere this server chooses. Reported as the real path
-	/// so that whoever has to go and sign in knows where the installer will look.
+	/// The account is the installer's own and is not somewhere this server chooses: it lies in the
+	/// documents folder of whoever runs the console. Reported as the real path so that whoever has to
+	/// go and sign in knows where the installer will look.
 	/// </summary>
 	[TestMethod]
 	public void TheAccountFileIsTheOneTheInstallerActuallyReads()
 	{
-		var account = ProductInstallerOptions.DefaultAccountFile();
+		var documents = Path.Combine(Path.GetTempPath(), "somebody", "Documents");
+		var installRoot = Path.Combine(Path.GetTempPath(), "projects", "products");
+
+		AreEqual(
+			Path.Combine(documents, "StockSharp", "credentials.json"),
+			ProductInstallerOptions.AccountFileOf(documents, installRoot));
+	}
+
+	/// <summary>
+	/// Where the platform names no documents folder, the installer is left with a bare name and settles
+	/// it against the directory it was started in, which is the install root. The account is reported
+	/// there, and not against the directory this server happened to start in, where the console never
+	/// looks.
+	/// </summary>
+	[TestMethod]
+	public void WithNoDocumentsFolderTheAccountIsWhereTheConsoleIsStarted()
+	{
+		var installRoot = Path.Combine(Path.GetTempPath(), "projects", "products");
+
+		AreEqual(
+			Path.Combine(installRoot, "StockSharp", "credentials.json"),
+			ProductInstallerOptions.AccountFileOf(string.Empty, installRoot));
+	}
+
+	/// <summary>The options a server starts with name that file, whatever machine they are read on.</summary>
+	[TestMethod]
+	public void TheOptionsAServerStartsWithNameTheAccountFile()
+	{
+		var account = ProductInstallerOptions.Read(Path.GetTempPath(), [9]).AccountFile;
 
 		IsTrue(Path.IsPathRooted(account), $"the account file is not an absolute path: {account}");
 		AreEqual("credentials.json", Path.GetFileName(account));
 		AreEqual("StockSharp", Path.GetFileName(Path.GetDirectoryName(account)));
-
-		IsFalse(account.Contains("odysseus", StringComparison.OrdinalIgnoreCase),
-			$"the account was reported as living somewhere this server controls: {account}");
 	}
 
 	/// <summary>An account nobody signed in is absent, and saying so is the whole of the check.</summary>

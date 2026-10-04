@@ -1,11 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// What the store knows about one artifact.
 /// </summary>

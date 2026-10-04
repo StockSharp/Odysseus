@@ -1,14 +1,8 @@
 namespace Odysseus.Engine;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-
-using Odysseus.Application;
 
 /// <summary>
 /// Who holds a project, and which session said so.
@@ -280,9 +274,6 @@ public sealed class RunnerRegistry
 		return Holder(ClaimFile(projectId))?.DeploymentId;
 	}
 
-	private string ClaimFile(string projectId)
-		=> Path.Combine(Directory, ClaimsFolder, Safe(projectId) + ClaimExtension);
-
 	/// <summary>
 	/// Writes the claim, if nobody has written one.
 	/// </summary>
@@ -415,4 +406,7 @@ public sealed class RunnerRegistry
 
 		return name.ToString();
 	}
+
+	private string ClaimFile(string projectId)
+		=> Path.Combine(Directory, ClaimsFolder, Safe(projectId) + ClaimExtension);
 }

@@ -1,7 +1,5 @@
 namespace Odysseus.Domain;
 
-using System;
-
 /// <summary>
 /// Identifies one revision of a strategy specification.
 /// </summary>

@@ -1,16 +1,6 @@
 namespace Odysseus.Persistence;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 
 /// <summary>
 /// Finished strategies kept as folders inside the project they came from.

@@ -6,10 +6,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<!--
 		The connector loader arrives transitively through the server, which is where the composition
 		root wires it. Declaring it here would be a second project naming the broker layer for the sake

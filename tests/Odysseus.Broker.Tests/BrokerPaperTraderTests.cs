@@ -1,17 +1,12 @@
 namespace Odysseus.Broker.Tests;
 
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
 using Odysseus.Compiler;
 using Odysseus.Domain;
 using Odysseus.Platform;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Putting a strategy on a real paper account.
@@ -33,10 +28,10 @@ public class BrokerPaperTraderTests : OdysseusTestBase
 	private const string KeysVariable = "ODYSSEUS_BROKER_KEYS";
 	private const string ConnectorVariable = "ODYSSEUS_BROKER_CONNECTOR";
 
+	private IPaperTrader _trader;
+
 	/// <inheritdoc />
 	protected override TimeSpan Timeout => TimeSpan.FromMinutes(6);
-
-	private IPaperTrader _trader;
 
 	/// <summary>Loads the connector the environment names, or declares the suite inapplicable.</summary>
 	[TestInitialize]

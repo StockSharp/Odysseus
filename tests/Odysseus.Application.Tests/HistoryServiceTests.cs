@@ -1,22 +1,12 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 using Waiting = System.Threading.Timeout;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Persistence;
 using Odysseus.Platform;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Downloading history from a broker, making it a project's data, and measuring what is in it.
@@ -35,54 +25,6 @@ public class HistoryServiceTests : OdysseusTestBase
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 30, 0, DateTimeKind.Utc);
 	private static readonly DateTime _from = new(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
 	private static readonly DateTime _to = new(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
-
-	/// <summary>A source that accepts the request and then says nothing at all.</summary>
-	private sealed class SilentSource : IHistorySource
-	{
-		public string SourceName => "silent";
-
-		public async Task<IReadOnlyList<Candle>> GetBarsAsync(
-			string symbol,
-			TimeSpan timeFrame,
-			DateTime from,
-			DateTime to,
-			CancellationToken cancellationToken)
-		{
-			await Task.Delay(Waiting.InfiniteTimeSpan, cancellationToken);
-			throw new InvalidOperationException("unreachable");
-		}
-	}
-
-	/// <summary>A source that answers with the same bars, and remembers what it was asked.</summary>
-	private sealed class Fixture : IHistorySource
-	{
-		private readonly IReadOnlyList<Candle> _bars;
-
-		public Fixture(IReadOnlyList<Candle> bars)
-		{
-			_bars = bars;
-		}
-
-		public string SourceName => "fixture";
-
-		/// <summary>Symbols it holds nothing for, which is how a broker answers a ticker that is wrong.</summary>
-		public HashSet<string> Unknown { get; } = new(StringComparer.Ordinal);
-
-		/// <summary>How many times it was asked for bars.</summary>
-		public int Downloads { get; private set; }
-
-		public Task<IReadOnlyList<Candle>> GetBarsAsync(
-			string symbol,
-			TimeSpan timeFrame,
-			DateTime from,
-			DateTime to,
-			CancellationToken cancellationToken)
-		{
-			Downloads++;
-
-			return Task.FromResult<IReadOnlyList<Candle>>(Unknown.Contains(symbol) ? [] : _bars);
-		}
-	}
 
 	private string _root;
 	private SqliteProjectStore _store;
@@ -335,15 +277,6 @@ public class HistoryServiceTests : OdysseusTestBase
 			$"the refusal does not say what the project does hold: {refusal.Message}");
 	}
 
-	private HistoryService Service(IHistorySource source)
-		=> new(_store, _datasets, source, new StockSharpMarketProfiler(), _store, _operations, new SystemClock())
-		{
-			Patience = TimeSpan.FromSeconds(30),
-		};
-
-	private async Task<ProjectId> ProjectAsync(string name)
-		=> (await _projects.CreateProjectAsync(name, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken)).Id;
-
 	/// <summary>Enough bars for a split with something in every slice, over several trading days.</summary>
 	private static IReadOnlyList<Candle> Bars()
 	{
@@ -364,5 +297,62 @@ public class HistoryServiceTests : OdysseusTestBase
 		}
 
 		return bars;
+	}
+
+	private HistoryService Service(IHistorySource source)
+		=> new(_store, _datasets, source, new StockSharpMarketProfiler(), _store, _operations, new SystemClock())
+		{
+			Patience = TimeSpan.FromSeconds(30),
+		};
+
+	private async Task<ProjectId> ProjectAsync(string name)
+		=> (await _projects.CreateProjectAsync(name, Guid.NewGuid().ToString("n"), Actors.Agent, CancellationToken)).Id;
+
+	/// <summary>A source that accepts the request and then says nothing at all.</summary>
+	private sealed class SilentSource : IHistorySource
+	{
+		public string SourceName => "silent";
+
+		public async Task<IReadOnlyList<Candle>> GetBarsAsync(
+			string symbol,
+			TimeSpan timeFrame,
+			DateTime from,
+			DateTime to,
+			CancellationToken cancellationToken)
+		{
+			await Task.Delay(Waiting.InfiniteTimeSpan, cancellationToken);
+			throw new InvalidOperationException("unreachable");
+		}
+	}
+
+	/// <summary>A source that answers with the same bars, and remembers what it was asked.</summary>
+	private sealed class Fixture : IHistorySource
+	{
+		private readonly IReadOnlyList<Candle> _bars;
+
+		public Fixture(IReadOnlyList<Candle> bars)
+		{
+			_bars = bars;
+		}
+
+		public string SourceName => "fixture";
+
+		/// <summary>Symbols it holds nothing for, which is how a broker answers a ticker that is wrong.</summary>
+		public HashSet<string> Unknown { get; } = new(StringComparer.Ordinal);
+
+		/// <summary>How many times it was asked for bars.</summary>
+		public int Downloads { get; private set; }
+
+		public Task<IReadOnlyList<Candle>> GetBarsAsync(
+			string symbol,
+			TimeSpan timeFrame,
+			DateTime from,
+			DateTime to,
+			CancellationToken cancellationToken)
+		{
+			Downloads++;
+
+			return Task.FromResult<IReadOnlyList<Candle>>(Unknown.Contains(symbol) ? [] : _bars);
+		}
 	}
 }

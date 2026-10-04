@@ -1,13 +1,5 @@
 namespace Odysseus.Products.Tests;
 
-using System;
-using System.Collections.Generic;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Products;
-using Odysseus.TestKit;
-
 /// <summary>
 /// How a command line for the installer console is built.
 /// </summary>

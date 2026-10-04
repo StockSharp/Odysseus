@@ -1,19 +1,5 @@
 namespace Odysseus.Worker.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Compiler;
-using Odysseus.Platform;
-using Odysseus.Domain;
-using Odysseus.Spec;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Searching the numbers a specification declared.
 /// </summary>
@@ -27,25 +13,6 @@ using Odysseus.TestKit;
 public class GeneticStrategyOptimizerTests : OdysseusTestBase
 {
 	private static readonly DateTime _open = new(2026, 3, 2, 14, 0, 0, DateTimeKind.Utc);
-
-	private async Task<OptimizationRequest> RequestAsync(int seed = 42, int population = 6, int generations = 2)
-	{
-		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(Searchable());
-
-		return new(
-			built.Assembly,
-			built.ClassName,
-			"DEMO",
-			TimeSpan.FromMinutes(5),
-			await StoredBars.WriteAsync(Waves(600), "DEMO", TimeSpan.FromMinutes(5), CancellationToken),
-			StartingEquity: 100_000m,
-			Volume: 10m,
-			PriceStep: 0.01m,
-			ExecutionCosts.Default,
-			population,
-			generations,
-			seed);
-	}
 
 	/// <summary>
 	/// A walk-forward fits each window on its own stretch and tests what it chose on the stretch after it:
@@ -245,5 +212,24 @@ public class GeneticStrategyOptimizerTests : OdysseusTestBase
 		}
 
 		return bars;
+	}
+
+	private async Task<OptimizationRequest> RequestAsync(int seed = 42, int population = 6, int generations = 2)
+	{
+		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(Searchable());
+
+		return new(
+			built.Assembly,
+			built.ClassName,
+			"DEMO",
+			TimeSpan.FromMinutes(5),
+			await StoredBars.WriteAsync(Waves(600), "DEMO", TimeSpan.FromMinutes(5), CancellationToken),
+			StartingEquity: 100_000m,
+			Volume: 10m,
+			PriceStep: 0.01m,
+			ExecutionCosts.Default,
+			population,
+			generations,
+			seed);
 	}
 }

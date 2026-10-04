@@ -1,12 +1,6 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
 
 /// <summary>
 /// The price an instrument trades at now.
@@ -184,29 +178,6 @@ public sealed class HistoryService
 		return imported.Manifest;
 	}
 
-	private async ValueTask<IReadOnlyList<Candle>> DownloadAsync(
-		string symbol,
-		TimeSpan timeFrame,
-		DateTime from,
-		DateTime to,
-		CancellationToken cancellationToken)
-	{
-		using var patience = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-		patience.CancelAfter(Patience);
-
-		try
-		{
-			return await _source.GetBarsAsync(symbol, timeFrame, from, to, patience.Token);
-		}
-		catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-		{
-			throw new TimeoutException(
-				$"The broker stopped answering while downloading '{symbol}', and nothing more arrived " +
-				$"within {Patience.TotalMinutes:0.#} minutes. Nothing was imported; ask again.");
-		}
-	}
-
 	/// <summary>
 	/// Measures what is in the data a project researches.
 	/// </summary>
@@ -247,5 +218,28 @@ public sealed class HistoryService
 			project, existing.Dataset, symbol, DataSlices.Development, cancellationToken);
 
 		return _profiler.Measure(symbol, development);
+	}
+
+	private async ValueTask<IReadOnlyList<Candle>> DownloadAsync(
+		string symbol,
+		TimeSpan timeFrame,
+		DateTime from,
+		DateTime to,
+		CancellationToken cancellationToken)
+	{
+		using var patience = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+		patience.CancelAfter(Patience);
+
+		try
+		{
+			return await _source.GetBarsAsync(symbol, timeFrame, from, to, patience.Token);
+		}
+		catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+		{
+			throw new TimeoutException(
+				$"The broker stopped answering while downloading '{symbol}', and nothing more arrived " +
+				$"within {Patience.TotalMinutes:0.#} minutes. Nothing was imported; ask again.");
+		}
 	}
 }

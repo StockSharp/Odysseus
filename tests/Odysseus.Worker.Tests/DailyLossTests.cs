@@ -1,19 +1,5 @@
 namespace Odysseus.Worker.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Compiler;
-using Odysseus.Platform;
-using Odysseus.Domain;
-using Odysseus.Spec;
-using Odysseus.TestKit;
-
 /// <summary>
 /// The limit on what one day may lose.
 /// </summary>
@@ -64,25 +50,6 @@ public class DailyLossTests : OdysseusTestBase
 
 	private static DateTime MarketDate(DateTime utc)
 		=> TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), MarketSession.Zone).Date;
-
-	private async Task<BacktestOutcome> RunAsync(StrategySpec spec)
-	{
-		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(spec);
-
-		return await new EmulatedBacktestRunner().RunAsync(
-			new(
-				built.Assembly,
-				built.ClassName,
-				new Dictionary<string, decimal>(),
-				"DEMO",
-				TimeSpan.FromMinutes(5),
-				await StoredBars.WriteAsync(Falling(), "DEMO", TimeSpan.FromMinutes(5), CancellationToken),
-				StartingEquity: 100_000m,
-				Volume: 100m,
-				PriceStep: 0.01m,
-				ExecutionCosts.Default),
-			CancellationToken);
-	}
 
 	/// <summary>Buy whenever the last bar closed above the one before, and let go two bars later.</summary>
 	private static StrategySpec Spec(decimal dailyLoss)
@@ -135,5 +102,24 @@ public class DailyLossTests : OdysseusTestBase
 		}
 
 		return bars;
+	}
+
+	private async Task<BacktestOutcome> RunAsync(StrategySpec spec)
+	{
+		var built = new StrategyBuilder(EngineAssemblies.Paths(AppContext.BaseDirectory)).Build(spec);
+
+		return await new EmulatedBacktestRunner().RunAsync(
+			new(
+				built.Assembly,
+				built.ClassName,
+				new Dictionary<string, decimal>(),
+				"DEMO",
+				TimeSpan.FromMinutes(5),
+				await StoredBars.WriteAsync(Falling(), "DEMO", TimeSpan.FromMinutes(5), CancellationToken),
+				StartingEquity: 100_000m,
+				Volume: 100m,
+				PriceStep: 0.01m,
+				ExecutionCosts.Default),
+			CancellationToken);
 	}
 }

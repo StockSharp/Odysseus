@@ -1,14 +1,5 @@
 namespace Odysseus.Engine.Tests;
 
-using System;
-using System.Collections.Generic;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Domain;
-using Odysseus.Engine;
-using Odysseus.TestKit;
-
 /// <summary>
 /// Telling a runner from whatever now holds its process number.
 /// </summary>

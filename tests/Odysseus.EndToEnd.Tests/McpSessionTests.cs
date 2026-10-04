@@ -1,14 +1,5 @@
 namespace Odysseus.EndToEnd.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using Odysseus.TestKit;
 
 /// <summary>
@@ -24,6 +15,74 @@ using Odysseus.TestKit;
 [TestClass]
 public class McpSessionTests : OdysseusTestBase
 {
+	private const string SoundSpec = """
+		{
+		  "name": "Volume confirmed breakout",
+		  "thesis": "A close above a recent high carries on when participation confirms it.",
+		  "allowLong": true,
+		  "allowShort": false,
+		  "timeFrame": "00:05:00",
+		  "warmupBars": 61,
+		  "entries": [
+		    {
+		      "id": "e1",
+		      "direction": "Long",
+		      "condition": {
+		        "kind": "Compare",
+		        "left": { "kind": "Field", "field": "Close" },
+		        "operator": "GreaterThan",
+		        "right": {
+		          "kind": "Indicator",
+		          "name": "highest",
+		          "length": { "kind": "Parameter", "name": "BreakoutPeriod" },
+		          "source": "High",
+		          "offset": 1
+		        }
+		      }
+		    }
+		  ],
+		  "exits": [
+		    { "id": "x1", "kind": "AtrStop", "direction": "Long",
+		      "length": { "kind": "Constant", "value": 14 },
+		      "multiplier": { "kind": "Constant", "value": 2 } },
+		    { "id": "x2", "kind": "SessionEnd", "direction": "Long" }
+		  ],
+		  "parameters": [
+		    { "name": "BreakoutPeriod", "type": "Integer", "default": 20, "minimum": 10, "maximum": 60, "step": 5, "optimizable": true }
+		  ],
+		  "risk": { "maxPositionPercent": 0.1, "maxDailyLossPercent": 0.02 },
+		  "assumptions": [],
+		  "invalidationConditions": []
+		}
+		""";
+
+	private const string BrokenSpec = """
+		{
+		  "name": "",
+		  "thesis": "",
+		  "allowLong": true,
+		  "allowShort": false,
+		  "timeFrame": "00:05:00",
+		  "warmupBars": 2,
+		  "entries": [
+		    {
+		      "id": "e1",
+		      "direction": "Long",
+		      "condition": {
+		        "kind": "Compare",
+		        "left": { "kind": "Field", "field": "Close" },
+		        "operator": "GreaterThan",
+		        "right": { "kind": "Parameter", "name": "Undeclared" }
+		      }
+		    }
+		  ],
+		  "exits": [],
+		  "parameters": [],
+		  "risk": { "maxPositionPercent": 0.1, "maxDailyLossPercent": 0.02 },
+		  "assumptions": [],
+		  "invalidationConditions": []
+		}
+		""";
 	private McpSession _session;
 	private string _root;
 
@@ -34,9 +93,7 @@ public class McpSessionTests : OdysseusTestBase
 		var executable = McpSession.FindServer();
 
 		if (executable is null)
-		{
 			Fail("The server executable was not found where the build puts it. This project builds it, so its absence is a broken build or a wrong path.");
-		}
 
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-e2e", Guid.NewGuid().ToString("n"));
 		_session = McpSession.Start(executable, _root);
@@ -726,75 +783,6 @@ public class McpSessionTests : OdysseusTestBase
 			$"a misspelled indicator must be answered with the nearest real name; the remedy said: {remedy}");
 	}
 
-	private const string SoundSpec = """
-		{
-		  "name": "Volume confirmed breakout",
-		  "thesis": "A close above a recent high carries on when participation confirms it.",
-		  "allowLong": true,
-		  "allowShort": false,
-		  "timeFrame": "00:05:00",
-		  "warmupBars": 61,
-		  "entries": [
-		    {
-		      "id": "e1",
-		      "direction": "Long",
-		      "condition": {
-		        "kind": "Compare",
-		        "left": { "kind": "Field", "field": "Close" },
-		        "operator": "GreaterThan",
-		        "right": {
-		          "kind": "Indicator",
-		          "name": "highest",
-		          "length": { "kind": "Parameter", "name": "BreakoutPeriod" },
-		          "source": "High",
-		          "offset": 1
-		        }
-		      }
-		    }
-		  ],
-		  "exits": [
-		    { "id": "x1", "kind": "AtrStop", "direction": "Long",
-		      "length": { "kind": "Constant", "value": 14 },
-		      "multiplier": { "kind": "Constant", "value": 2 } },
-		    { "id": "x2", "kind": "SessionEnd", "direction": "Long" }
-		  ],
-		  "parameters": [
-		    { "name": "BreakoutPeriod", "type": "Integer", "default": 20, "minimum": 10, "maximum": 60, "step": 5, "optimizable": true }
-		  ],
-		  "risk": { "maxPositionPercent": 0.1, "maxDailyLossPercent": 0.02 },
-		  "assumptions": [],
-		  "invalidationConditions": []
-		}
-		""";
-
-	private const string BrokenSpec = """
-		{
-		  "name": "",
-		  "thesis": "",
-		  "allowLong": true,
-		  "allowShort": false,
-		  "timeFrame": "00:05:00",
-		  "warmupBars": 2,
-		  "entries": [
-		    {
-		      "id": "e1",
-		      "direction": "Long",
-		      "condition": {
-		        "kind": "Compare",
-		        "left": { "kind": "Field", "field": "Close" },
-		        "operator": "GreaterThan",
-		        "right": { "kind": "Parameter", "name": "Undeclared" }
-		      }
-		    }
-		  ],
-		  "exits": [],
-		  "parameters": [],
-		  "risk": { "maxPositionPercent": 0.1, "maxDailyLossPercent": 0.02 },
-		  "assumptions": [],
-		  "invalidationConditions": []
-		}
-		""";
-
 	/// <summary>
 	/// The whole path, ending where the product ends: the model reads the numbers, decides, and the
 	/// server writes down what was decided along with everything needed to check it later.
@@ -1347,9 +1335,7 @@ public class McpSessionTests : OdysseusTestBase
 		var named = reasons.EnumerateArray().Select(r => r.GetProperty("slice").GetString()).ToArray();
 
 		foreach (var part in silent)
-		{
 			IsTrue(named.Contains(part), $"'{part}' traded nothing and is not among the reasons given.");
-		}
 
 		foreach (var reason in reasons.EnumerateArray())
 		{

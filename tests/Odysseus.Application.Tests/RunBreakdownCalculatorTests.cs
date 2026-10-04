@@ -1,15 +1,6 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Platform;
-using Odysseus.TestKit;
 
 /// <summary>
 /// Cutting a run's result apart to see where it came from.

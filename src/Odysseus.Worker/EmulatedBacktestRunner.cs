@@ -1,25 +1,12 @@
 namespace Odysseus.Worker;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 
-using Ecng.Common;
-
-using StockSharp.Algo;
-using StockSharp.Algo.Commissions;
-using StockSharp.Algo.Strategies;
 using StockSharp.Algo.Testing;
 using StockSharp.BusinessEntities;
-using StockSharp.Messages;
 
-using Odysseus.Application;
 using Odysseus.Domain;
 using Odysseus.Evaluation;
-using Odysseus.Platform;
 
 /// <summary>
 /// Runs a compiled candidate through the StockSharp market emulator.

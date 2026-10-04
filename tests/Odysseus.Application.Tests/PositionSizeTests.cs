@@ -1,13 +1,6 @@
 namespace Odysseus.Application.Tests;
 
-using System;
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 using Odysseus.Spec;
-using Odysseus.TestKit;
 
 /// <summary>
 /// How large one position is.

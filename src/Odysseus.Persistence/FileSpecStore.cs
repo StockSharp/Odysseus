@@ -1,18 +1,8 @@
 namespace Odysseus.Persistence;
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Application;
-using Odysseus.Domain;
 
 /// <summary>
 /// Specifications kept as files inside the project they belong to.

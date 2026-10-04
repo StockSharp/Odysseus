@@ -1,12 +1,5 @@
 namespace Odysseus.Application;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Odysseus.Domain;
-
 /// <summary>
 /// The market-data storage every project shares: one folder in the trading engine's own format, holding
 /// whatever history has been imported, by symbol and candle length.
