@@ -89,6 +89,17 @@ scenario beside the `baseline` and `costsX15` ones.
 
 ## Running it
 
+### From a release
+
+You need the [.NET 10 runtime](https://dotnet.microsoft.com/download/dotnet/10.0). Download the archive
+for your system from [the releases](https://github.com/StockSharp/Odysseus/releases) - Windows x64,
+Linux x64 or macOS on Apple silicon - and unpack it. The folder holds the server as `Odysseus.Server`
+and the command line as `odysseus`, with the worker and the runner they start in folders beside them,
+so it is moved and removed as one. On macOS, clear the flag the browser puts on a download before the
+first start: `xattr -dr com.apple.quarantine odysseus`.
+
+### From source
+
 You need the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```bash
@@ -104,6 +115,8 @@ in a `Directory.Build.local.props` beside `Directory.Build.props`.
 
 That produces `src/Odysseus.Server/bin/Release/net10.0/Odysseus.Server.exe`, and the command line
 beside it as `src/Odysseus.Cli/bin/Release/net10.0/odysseus.exe`.
+
+### Connecting an agent
 
 Point your agent at the server over stdio:
 
@@ -348,6 +361,8 @@ dotnet run --project src/Odysseus.Cli -- measure
 dotnet run --project src/Odysseus.Cli -- closed
 dotnet run --project src/Odysseus.Cli -- complete "why you believe it"
 ```
+
+Out of a release the same commands are `odysseus new "my study"` and so on, run in the unpacked folder.
 
 `samples/hypothesis.json` is a real specification: a breakout confirmed by volume, with an ATR stop and
 a close at the session end. It is what the walkthrough above proposes, and a test holds it to both the

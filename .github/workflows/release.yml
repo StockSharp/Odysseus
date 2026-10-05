@@ -1,0 +1,200 @@
+# What a release is: the server and the command line for one operating system, with the worker and the
+# runner they start, in one archive that needs the .NET runtime and nothing else.
+#
+# Started by pushing a tag that begins with `v`, or by hand with a version, which then creates that tag.
+# The archives are published only when every one of them was built and tried: a release with one
+# operating system missing would look like a complete one.
+#
+# The test suite is not run here - it gates every push in build.yml. What this checks is what that
+# cannot: that the folder a person unpacks starts on their system, finds its worker and runs a study.
+
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, without the leading v. A tag of that name is created.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  # Settled once, so that the three archives are one version built against one state of the platform.
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      stocksharp: ${{ steps.stocksharp.outputs.commit }}
+    steps:
+      - id: version
+        env:
+          TYPED: ${{ inputs.version }}
+        run: |
+          version="${TYPED:-${GITHUB_REF_NAME#v}}"
+
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::'$version' is not a version. Write it as 1.2.3 or 1.2.3-beta.1."
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # The trading platform is built from source, at the tip of its master. Which commit that is has to
+      # be the same for every archive, and master can move while they are being built.
+      - id: stocksharp
+        run: |
+          commit="$(git ls-remote https://github.com/StockSharp/StockSharp.git refs/heads/master | cut -f1)"
+
+          if [ -z "$commit" ]; then
+            echo "::error::The master of StockSharp could not be read."
+            exit 1
+          fi
+
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+  package:
+    needs: prepare
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+        working-directory: Odysseus
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      RID: ${{ matrix.rid }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: Odysseus
+
+      - uses: actions/checkout@v7
+        with:
+          repository: StockSharp/StockSharp
+          ref: ${{ needs.prepare.outputs.stocksharp }}
+          path: 'StockSharp (GitHub)'
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.400
+
+      # The server and the command line share a folder: what they both depend on is the same build of
+      # the same files. The worker and the runner each get a folder of their own under the names the
+      # hosts look for, because their dependencies are not the hosts'.
+      #
+      # No symbols, no documentation files and no translated compiler messages: a release is run, not
+      # debugged or compiled against, and what it says is in English.
+      - name: Publish
+        run: |
+          publish() {
+            dotnet publish "src/Odysseus.$1/Odysseus.$1.csproj" --configuration Release --runtime "$RID" \
+              --self-contained false --output "../dist/odysseus/$2" \
+              -p:OdysseusVersion="$VERSION" -p:DebugType=none -p:DebugSymbols=false \
+              -p:GenerateDocumentationFile=false -p:SatelliteResourceLanguages=en
+          }
+
+          publish Server ""
+          publish Cli ""
+          publish Worker worker
+          publish Runner runner
+
+          cp LICENSE README.md ../dist/odysseus/
+          cp -R samples schemas ../dist/odysseus/
+
+      # Run out of the folder that is about to be archived, the way whoever unpacks it will. A backtest
+      # starts the worker, and the worker is refused unless it carries the platform the host carries -
+      # so this passing is the layout being right, not only the files being there.
+      - name: Try the command line
+        working-directory: dist/odysseus
+        env:
+          ODYSSEUS_PROJECTS_ROOT: ${{ runner.temp }}/odysseus-projects
+          ODYSSEUS_MARKET_DATA: ${{ runner.temp }}/odysseus-market
+        run: |
+          ./odysseus new "release check"
+          ./odysseus demo
+          ./odysseus propose samples/hypothesis.json
+          ./odysseus build
+          ./odysseus backtest
+
+      # The server answers while its input is open, so the input is held open for a moment after the
+      # question instead of being closed behind it.
+      - name: Try the server
+        working-directory: dist/odysseus
+        env:
+          ODYSSEUS_PROJECTS_ROOT: ${{ runner.temp }}/odysseus-projects
+          ODYSSEUS_MARKET_DATA: ${{ runner.temp }}/odysseus-market
+        run: |
+          hello='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"release","version":"0"}}}'
+
+          { printf '%s\n' "$hello"; sleep 10; } | ./Odysseus.Server > "$RUNNER_TEMP/server-answer.json"
+
+          cat "$RUNNER_TEMP/server-answer.json"
+
+          grep -q '"serverInfo"' "$RUNNER_TEMP/server-answer.json"
+
+      # tar keeps the executable bit, which a zip made here would lose on the way to Linux and macOS.
+      - name: Archive
+        working-directory: dist
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            7z a -tzip "odysseus-$VERSION-$RID.zip" odysseus
+          else
+            tar -czf "odysseus-$VERSION-$RID.tar.gz" odysseus
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: odysseus-${{ matrix.rid }}
+          path: |
+            dist/odysseus-*.zip
+            dist/odysseus-*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [prepare, package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      STOCKSHARP: ${{ needs.prepare.outputs.stocksharp }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: odysseus-*
+          path: archives
+          merge-multiple: true
+
+      # The tag is this commit: already there when a tag started the run, created here when a person did.
+      - run: |
+          notes="Needs the [.NET 10 runtime](https://dotnet.microsoft.com/download/dotnet/10.0). Unpack the archive for your system and point your agent at \`Odysseus.Server\` in it; the command line is \`odysseus\` beside it.
+
+          Built against StockSharp at https://github.com/StockSharp/StockSharp/commit/$STOCKSHARP."
+
+          gh release create "v$VERSION" archives/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Odysseus $VERSION" \
+            --notes "$notes" \
+            --generate-notes

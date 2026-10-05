@@ -25,6 +25,12 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<Company>Odysseus</Company>
 		<Product>Odysseus</Product>
+		<!--
+		A release says which version it is under a name of its own. Version given on the command line
+		would reach the StockSharp projects as well, and a broker connector compiled against their
+		assembly version would no longer find them.
+		-->
+		<Version Condition="'$(OdysseusVersion)' != ''">$(OdysseusVersion)</Version>
 	</PropertyGroup>
 
 </Project>
