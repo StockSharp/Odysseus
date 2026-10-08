@@ -1,5 +1,8 @@
 # Odysseus
 
+[![MCP on NuGet](https://img.shields.io/nuget/v/StockSharp.Odysseus.Mcp?label=MCP)](https://www.nuget.org/packages/StockSharp.Odysseus.Mcp)
+[![CLI on NuGet](https://img.shields.io/nuget/v/StockSharp.Odysseus.Cli?label=CLI)](https://www.nuget.org/packages/StockSharp.Odysseus.Cli)
+
 An MCP server that turns any AI agent into a quantitative researcher — and holds it to the discipline
 that makes a result mean something.
 
@@ -91,15 +94,20 @@ scenario beside the `baseline` and `costsX15` ones.
 
 ### From NuGet
 
-With the [.NET 10 SDK](https://dotnet.microsoft.com/download), install the command line and MCP server:
+With the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), install either tool from NuGet:
+
+| Package | Command | What it does |
+|---|---|---|
+| [StockSharp.Odysseus.Mcp](https://www.nuget.org/packages/StockSharp.Odysseus.Mcp) | `odysseus-mcp` | MCP server for an AI agent |
+| [StockSharp.Odysseus.Cli](https://www.nuget.org/packages/StockSharp.Odysseus.Cli) | `odysseus` | The same research tools from a terminal |
 
 ```bash
-dotnet tool install --global StockSharp.Odysseus.Cli
 dotnet tool install --global StockSharp.Odysseus.Mcp
+dotnet tool install --global StockSharp.Odysseus.Cli
 ```
 
-The commands are `odysseus` and `odysseus-mcp`. Each package includes the worker and runner in their own
-folders, so either tool can be installed independently. The MCP connection below can use
+Each package includes the worker and runner in their own folders, so either tool can be installed
+independently. The MCP connection below can use
 `"command": "odysseus-mcp"` instead of a path to the server executable.
 
 ### From a release
