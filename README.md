@@ -89,6 +89,19 @@ scenario beside the `baseline` and `costsX15` ones.
 
 ## Running it
 
+### From NuGet
+
+With the [.NET 10 SDK](https://dotnet.microsoft.com/download), install the command line and MCP server:
+
+```bash
+dotnet tool install --global StockSharp.Odysseus.Cli
+dotnet tool install --global StockSharp.Odysseus.Mcp
+```
+
+The commands are `odysseus` and `odysseus-mcp`. Each package includes the worker and runner in their own
+folders, so either tool can be installed independently. The MCP connection below can use
+`"command": "odysseus-mcp"` instead of a path to the server executable.
+
 ### From a release
 
 You need the [.NET 10 runtime](https://dotnet.microsoft.com/download/dotnet/10.0). Download the archive
@@ -424,8 +437,13 @@ None of that is worth anything if it only runs when somebody remembers to run it
 [`build.yml`](.github/workflows/build.yml) runs it: every push and every pull request restores, builds the
 whole solution in Release — warnings are errors there, so that step is a gate before any test starts —
 and then runs every test, keeping a JUnit report per test assembly with the run. A failing test fails
-the build. It needs nothing configured to pass: the few tests that want a broker account look for
-credentials, find none, and are skipped.
+the build. It also packs the MCP and CLI tools, installs them from those packages, runs the CLI through
+a generated-data backtest and checks the MCP handshake. It needs nothing configured to pass: the few
+tests that want a broker account look for credentials, find none, and are skipped.
+
+The [release workflow](.github/workflows/release.yml) verifies the packages and archives before uploading
+them to NuGet.org and GitHub. [Release setup and verification](docs/releasing.md) cover the Trusted
+Publishing policy and the dry-run modes.
 
 ---
 

@@ -33,4 +33,21 @@
 		<Version Condition="'$(OdysseusVersion)' != ''">$(OdysseusVersion)</Version>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(MSBuildProjectName)' == 'Odysseus.Server' Or '$(MSBuildProjectName)' == 'Odysseus.Cli'">
+		<PackAsTool>true</PackAsTool>
+		<Authors>StockSharp</Authors>
+		<Description>Local quantitative research with StockSharp, including the worker and deployment runner.</Description>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageProjectUrl>https://github.com/StockSharp/Odysseus</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/StockSharp/Odysseus</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>stocksharp;mcp;quantitative-research;backtesting;trading</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(PackAsTool)' == 'true'">
+		<None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="/" />
+		<None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="/" />
+	</ItemGroup>
+
 </Project>

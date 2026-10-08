@@ -14,10 +14,22 @@ name: build
 on:
   push:
   pull_request:
+  workflow_call:
+    inputs:
+      version:
+        description: Odysseus package and assembly version.
+        required: false
+        type: string
+        default: ''
+      stocksharp:
+        description: StockSharp source commit used by the release.
+        required: false
+        type: string
+        default: master
 
 # A newer push to the same branch or pull request makes the run in progress worthless.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.version }}
   cancel-in-progress: true
 
 permissions:
@@ -31,6 +43,7 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
   SOLUTION: Odysseus.slnx
+  ODYSSEUS_VERSION: ${{ inputs.version }}
 
 jobs:
   build-and-test:
@@ -50,7 +63,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: StockSharp/StockSharp
-          ref: master
+          ref: ${{ inputs.stocksharp || 'master' }}
           path: 'StockSharp (GitHub)'
 
       # Pinned to a patch rather than to `10.0.x`. With TreatWarningsAsErrors on, every analyser warning a
@@ -58,11 +71,11 @@ jobs:
       # somebody changes this line and watches what happens.
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.400
+          global-json-file: Odysseus/global.json
 
-      - run: dotnet restore "$SOLUTION"
+      - run: dotnet restore "$SOLUTION" -p:Configuration=Release -p:OdysseusVersion="$ODYSSEUS_VERSION"
 
-      - run: dotnet build "$SOLUTION" --configuration Release --no-restore
+      - run: dotnet build "$SOLUTION" --configuration Release --no-restore -p:OdysseusVersion="$ODYSSEUS_VERSION"
 
       # One JUnit report per test assembly. A verbose failure body carries the assertion message and the
       # stack into the report itself. LogFilePath is absolute on purpose: a relative one is resolved
@@ -76,6 +89,32 @@ jobs:
           --filter "FullyQualifiedName~Odysseus" --blame-hang-timeout 120s
           --logger "junit;LogFilePath=$GITHUB_WORKSPACE/artifacts/test-results/{assembly}.xml;FailureBodyFormat=Verbose"
           -- RunConfiguration.TestSessionTimeout=900000
+
+      - name: Pack the MCP and CLI tools
+        id: packages
+        run: |
+          for project in Cli Server; do
+            dotnet pack "src/Odysseus.$project/Odysseus.$project.csproj" --configuration Release \
+              --no-build --no-restore --output artifacts/packages -p:OdysseusVersion="$ODYSSEUS_VERSION"
+          done
+          version="$ODYSSEUS_VERSION"
+          if [ -z "$version" ]; then
+            version="$(dotnet msbuild src/Odysseus.Cli/Odysseus.Cli.csproj -nologo -getProperty:PackageVersion)"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate and run the installed tools
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ steps.packages.outputs.version }}
+        run: ./.github/scripts/Test-ToolPackages.ps1 -PackageDirectory artifacts/packages -Version $env:PACKAGE_VERSION
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages
+          path: Odysseus/artifacts/packages/*.nupkg
+          if-no-files-found: error
+          retention-days: 7
 
       # A run that failed is the one whose results are worth having.
       - uses: actions/upload-artifact@v7

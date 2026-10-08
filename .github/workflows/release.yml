@@ -5,8 +5,8 @@
 # The archives are published only when every one of them was built and tried: a release with one
 # operating system missing would look like a complete one.
 #
-# The test suite is not run here - it gates every push in build.yml. What this checks is what that
-# cannot: that the folder a person unpacks starts on their system, finds its worker and runs a study.
+# The reusable build runs the test suite and checks the installed NuGet tools. Each archive is also
+# tried on its own operating system before either the archives or the packages are published.
 
 name: release
 
@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Version to release, without the leading v. A tag of that name is created.
+        description: Version without the leading v. Publishing creates the tag after all checks pass.
         required: true
         type: string
       dry_run:
@@ -53,12 +53,27 @@ jobs:
         run: |
           version="${TYPED:-${GITHUB_REF_NAME#v}}"
 
-          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+          if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
             echo "::error::'$version' is not a version. Write it as 1.2.3 or 1.2.3-beta.1."
             exit 1
           fi
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Check NuGet publishing configuration
+        env:
+          NUGET_USER: ${{ vars.NUGET_USER }}
+          VERIFY_ONLY: ${{ inputs.verify_only }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [[ "$VERIFY_ONLY" == 'true' && "$DRY_RUN" != 'true' ]]; then
+            echo "::error::verify_only requires dry_run."
+            exit 1
+          fi
+          if [ -z "$NUGET_USER" ]; then
+            echo "::error::Set NUGET_USER to the personal NuGet.org username whose Trusted Publishing policy permits release.yml. See docs/releasing.md."
+            exit 1
+          fi
 
       # The trading platform is built from source, at the tip of its master. Which commit that is has to
       # be the same for every archive, and master can move while they are being built.
@@ -138,7 +153,7 @@ jobs:
             dotnet publish "src/Odysseus.$1/Odysseus.$1.csproj" --configuration Release --runtime "$RID" \
               --self-contained false --output "../dist/odysseus/$2" \
               -p:OdysseusVersion="$VERSION" -p:DebugType=none -p:DebugSymbols=false \
-              -p:GenerateDocumentationFile=false -p:SatelliteResourceLanguages=en
+              -p:GenerateDocumentationFile=false -p:SatelliteResourceLanguages=en -p:PackAsTool=false
           }
 
           publish Server ""
@@ -199,32 +214,103 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  nuget:
+    if: '!inputs.verify_only'
+    needs: prepare
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      stocksharp: ${{ needs.prepare.outputs.stocksharp }}
+
+  test-tools:
+    needs: [prepare, nuget]
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: nuget-packages
+          path: packages
+
+      - name: Verify the portable tool packages on this operating system
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: ./.github/scripts/Test-ToolPackages.ps1 -PackageDirectory packages -Version $env:PACKAGE_VERSION
+
   publish:
     if: github.event_name == 'push' || (!inputs.dry_run && !inputs.verify_only)
-    needs: [prepare, package]
+    needs: [prepare, package, nuget, test-tools]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       STOCKSHARP: ${{ needs.prepare.outputs.stocksharp }}
       GH_TOKEN: ${{ github.token }}
     steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
       - uses: actions/download-artifact@v8
         with:
           pattern: odysseus-*
           path: archives
           merge-multiple: true
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: nuget-packages
+          path: packages
+
+      - name: Validate the NuGet packages
+        shell: pwsh
+        run: ./.github/scripts/Test-ToolPackages.ps1 -PackageDirectory packages -Version $env:VERSION -ValidateOnly
+
+      - name: Get a short-lived NuGet publishing key
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Publish the NuGet packages
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          foreach ($package in Get-ChildItem -LiteralPath packages -Filter '*.nupkg' -File) {
+            dotnet nuget push $package.FullName --source https://api.nuget.org/v3/index.json `
+              --api-key $env:NUGET_API_KEY --skip-duplicate --timeout 120
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
       # The tag is this commit: already there when a tag started the run, created here when a person did.
       - run: |
+          options=()
+          if [[ "$VERSION" == *-* ]]; then options+=(--prerelease); fi
           notes="Needs the [.NET 10 runtime](https://dotnet.microsoft.com/download/dotnet/10.0). Unpack the archive for your system and point your agent at \`Odysseus.Server\` in it; the command line is \`odysseus\` beside it.
+
+          NuGet also provides the \`StockSharp.Odysseus.Mcp\` and \`StockSharp.Odysseus.Cli\` .NET tools, each with its worker and runner.
 
           Built against StockSharp at https://github.com/StockSharp/StockSharp/commit/$STOCKSHARP."
 
-          gh release create "v$VERSION" archives/* \
+          gh release create "v$VERSION" archives/* packages/*.nupkg \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "Odysseus $VERSION" \
             --notes "$notes" \
-            --generate-notes
+            --generate-notes "${options[@]}"

@@ -2,6 +2,8 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
+		<PackageId>StockSharp.Odysseus.Mcp</PackageId>
+		<ToolCommandName>odysseus-mcp</ToolCommandName>
 
 		<!-- Candidates run in the worker, so the worker is built and copied beside this host. -->
 		<NeedsWorker>true</NeedsWorker>

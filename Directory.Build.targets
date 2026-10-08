@@ -79,4 +79,29 @@
 
 	</Target>
 
+	<!-- Tool installation must keep each process's dependency closure in its own folder. -->
+	<PropertyGroup Condition="'$(PackAsTool)' == 'true'">
+		<TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);IncludeProcessToolsInPackage</TargetsForTfmSpecificContentInPackage>
+	</PropertyGroup>
+
+	<Target Name="IncludeProcessToolsInPackage" Condition="'$(PackAsTool)' == 'true'">
+		<ItemGroup>
+			<_ToolWorkerPackageFile Include="$(TargetDir)worker/**/*"
+			                        Exclude="$(TargetDir)worker/**/*.pdb;$(TargetDir)worker/**/*.xml;$(TargetDir)worker/Odysseus.Worker;$(TargetDir)worker/Odysseus.Worker.exe">
+				<PackagePath>tools/$(TargetFramework)/any/worker/%(RecursiveDir)</PackagePath>
+			</_ToolWorkerPackageFile>
+			<_ToolRunnerPackageFile Include="$(TargetDir)runner/**/*"
+			                        Exclude="$(TargetDir)runner/**/*.pdb;$(TargetDir)runner/**/*.xml;$(TargetDir)runner/Odysseus.Runner;$(TargetDir)runner/Odysseus.Runner.exe">
+				<PackagePath>tools/$(TargetFramework)/any/runner/%(RecursiveDir)</PackagePath>
+			</_ToolRunnerPackageFile>
+			<_ToolSamplePackageFile Include="$(MSBuildThisFileDirectory)samples/**/*">
+				<PackagePath>tools/$(TargetFramework)/any/samples/%(RecursiveDir)</PackagePath>
+			</_ToolSamplePackageFile>
+			<_ToolSchemaPackageFile Include="$(MSBuildThisFileDirectory)schemas/**/*">
+				<PackagePath>tools/$(TargetFramework)/any/schemas/%(RecursiveDir)</PackagePath>
+			</_ToolSchemaPackageFile>
+			<TfmSpecificPackageFile Include="@(_ToolWorkerPackageFile);@(_ToolRunnerPackageFile);@(_ToolSamplePackageFile);@(_ToolSchemaPackageFile)" />
+		</ItemGroup>
+	</Target>
+
 </Project>

@@ -4,6 +4,8 @@
 		<OutputType>Exe</OutputType>
 		<AssemblyName>odysseus</AssemblyName>
 		<RootNamespace>Odysseus.Cli</RootNamespace>
+		<PackageId>StockSharp.Odysseus.Cli</PackageId>
+		<ToolCommandName>odysseus</ToolCommandName>
 
 		<!-- Candidates run in the worker, so the worker is built and copied beside this host. -->
 		<NeedsWorker>true</NeedsWorker>
