@@ -115,7 +115,7 @@ foreach ($id in $expected.Keys) {
 $extension = if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) { '.exe' } else { '' }
 $cliDirectory = Join-Path $probeRoot 'StockSharp.Odysseus.Cli'
 $cli = Join-Path $cliDirectory ('odysseus' + $extension)
-$entry = @(Get-ChildItem -LiteralPath $cliDirectory -Filter 'odysseus.dll' -File -Recurse)
+$entry = @(Get-ChildItem -LiteralPath $cliDirectory -Filter 'odysseus.dll' -File -Recurse -Force)
 if ($entry.Count -ne 1) { throw 'The installed CLI entry point is missing or ambiguous.' }
 $hypothesis = Join-Path $entry[0].DirectoryName 'samples/hypothesis.json'
 Invoke-Probe $cli @('new', 'package check')
