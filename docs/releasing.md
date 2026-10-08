@@ -18,14 +18,16 @@ The packages also carry the sample hypotheses, schemas, README and license.
 Release, runs the test assemblies sequentially with a filter, a two-minute hang timeout and a
 fifteen-minute session timeout, then packs and installs the tools from a local feed. The CLI compiles a
 candidate and backtests it through its packaged worker on generated data. The MCP tool completes an
-initialize handshake. No broker account or product installer is configured for these probes.
+initialize handshake and reports the expected release version, allowing its commit metadata suffix.
+No broker account or product installer is configured for these probes.
 
 A release calls that same build with its version and StockSharp commit. The resulting tool packages
 are also installed and tried on Windows and macOS; Linux is checked by the build job. Each archive
 is independently built and tried on its target operating system. Publication waits for all checks.
 
 Only `OdysseusVersion` sets a release version. Setting the global `Version` property would also change
-StockSharp assemblies, which broker connectors are compiled against.
+StockSharp assemblies, which broker connectors are compiled against. The workflow uses
+`RELEASE_VERSION` because MSBuild also imports environment variables as properties, including `VERSION`.
 
 ## Trusted Publishing
 
@@ -54,8 +56,10 @@ Open **Actions → release → Run workflow**, enter a version without `v`, and 
 | `true` | `false` | Verify authorization, build and test the tools and all three archives. |
 | `false` | `false` | Run the full checks, upload both NuGet packages and create the GitHub release. |
 
-Dry runs create no tag or release. A real run first uploads the packages, then creates `v<version>`
-at the workflow's source commit and attaches the two packages and three archives. A prerelease version
+Dry runs create no tag or release and may check a version whose tag already exists. A real manual run
+rejects an existing `v<version>` tag before building or publishing anything. It first uploads the
+packages, then creates `v<version>` at the workflow's source commit and attaches the two packages and
+three archives. A prerelease version
 such as `0.1.1-beta.1` is marked as a GitHub prerelease. Existing NuGet package versions are skipped on
 retry; an existing GitHub release is never replaced.
 

@@ -136,8 +136,7 @@ try {
     $process.StandardInput.WriteLine($hello)
     $answer = $process.StandardOutput.ReadLineAsync()
     if (-not $answer.Wait(30000)) { throw 'The installed MCP server did not answer initialize in 30 seconds.' }
-    $response = $answer.GetAwaiter().GetResult() | ConvertFrom-Json
-    if ($response.id -ne 1 -or -not $response.result.serverInfo -or $response.error) { throw 'The installed MCP server returned an incorrect initialize response.' }
+    & (Join-Path $PSScriptRoot 'Test-McpInitialize.ps1') -ResponseJson $answer.GetAwaiter().GetResult() -Version $Version
     $process.StandardInput.Close()
     if (-not $process.WaitForExit(30000)) { throw 'The installed MCP server did not exit after its input closed.' }
     if ($process.ExitCode -ne 0) { throw "The MCP server exited $($process.ExitCode): $($errorOutput.GetAwaiter().GetResult())" }

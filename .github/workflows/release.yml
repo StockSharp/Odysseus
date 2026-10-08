@@ -50,12 +50,27 @@ jobs:
       - id: version
         env:
           TYPED: ${{ inputs.version }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          VERIFY_ONLY: ${{ inputs.verify_only }}
         run: |
           version="${TYPED:-${GITHUB_REF_NAME#v}}"
 
           if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
             echo "::error::'$version' is not a version. Write it as 1.2.3 or 1.2.3-beta.1."
             exit 1
+          fi
+
+          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' && "$DRY_RUN" != 'true' && "$VERIFY_ONLY" != 'true' ]]; then
+            if git ls-remote --tags --refs --exit-code "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "refs/tags/v$version"; then
+              echo "::error::Tag v$version already exists. Choose a new release version."
+              exit 1
+            else
+              status=$?
+              if [ "$status" -ne 2 ]; then
+                echo "::error::Could not check whether tag v$version exists."
+                exit "$status"
+              fi
+            fi
           fi
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -124,7 +139,7 @@ jobs:
         shell: bash
         working-directory: Odysseus
     env:
-      VERSION: ${{ needs.prepare.outputs.version }}
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
       RID: ${{ matrix.rid }}
     steps:
       - uses: actions/checkout@v7
@@ -139,7 +154,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.400
+          global-json-file: Odysseus/global.json
 
       # The server and the command line share a folder: what they both depend on is the same build of
       # the same files. The worker and the runner each get a folder of their own under the names the
@@ -152,7 +167,7 @@ jobs:
           publish() {
             dotnet publish "src/Odysseus.$1/Odysseus.$1.csproj" --configuration Release --runtime "$RID" \
               --self-contained false --output "../dist/odysseus/$2" \
-              -p:OdysseusVersion="$VERSION" -p:DebugType=none -p:DebugSymbols=false \
+              -p:OdysseusVersion="$RELEASE_VERSION" -p:DebugType=none -p:DebugSymbols=false \
               -p:GenerateDocumentationFile=false -p:SatelliteResourceLanguages=en -p:PackAsTool=false
           }
 
@@ -193,16 +208,20 @@ jobs:
 
           cat "$RUNNER_TEMP/server-answer.json"
 
-          grep -q '"serverInfo"' "$RUNNER_TEMP/server-answer.json"
+      - name: Check the server version
+        shell: pwsh
+        run: |
+          $response = Get-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'server-answer.json') -Raw
+          ./.github/scripts/Test-McpInitialize.ps1 -ResponseJson $response -Version $env:RELEASE_VERSION
 
       # tar keeps the executable bit, which a zip made here would lose on the way to Linux and macOS.
       - name: Archive
         working-directory: dist
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
-            7z a -tzip "odysseus-$VERSION-$RID.zip" odysseus
+            7z a -tzip "odysseus-$RELEASE_VERSION-$RID.zip" odysseus
           else
-            tar -czf "odysseus-$VERSION-$RID.tar.gz" odysseus
+            tar -czf "odysseus-$RELEASE_VERSION-$RID.tar.gz" odysseus
           fi
 
       - uses: actions/upload-artifact@v7
@@ -256,7 +275,7 @@ jobs:
       contents: write
       id-token: write
     env:
-      VERSION: ${{ needs.prepare.outputs.version }}
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
       STOCKSHARP: ${{ needs.prepare.outputs.stocksharp }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -279,7 +298,7 @@ jobs:
 
       - name: Validate the NuGet packages
         shell: pwsh
-        run: ./.github/scripts/Test-ToolPackages.ps1 -PackageDirectory packages -Version $env:VERSION -ValidateOnly
+        run: ./.github/scripts/Test-ToolPackages.ps1 -PackageDirectory packages -Version $env:RELEASE_VERSION -ValidateOnly
 
       - name: Get a short-lived NuGet publishing key
         id: nuget-login
@@ -301,16 +320,16 @@ jobs:
       # The tag is this commit: already there when a tag started the run, created here when a person did.
       - run: |
           options=()
-          if [[ "$VERSION" == *-* ]]; then options+=(--prerelease); fi
+          if [[ "$RELEASE_VERSION" == *-* ]]; then options+=(--prerelease); fi
           notes="Needs the [.NET 10 runtime](https://dotnet.microsoft.com/download/dotnet/10.0). Unpack the archive for your system and point your agent at \`Odysseus.Server\` in it; the command line is \`odysseus\` beside it.
 
           NuGet also provides the \`StockSharp.Odysseus.Mcp\` and \`StockSharp.Odysseus.Cli\` .NET tools, each with its worker and runner.
 
           Built against StockSharp at https://github.com/StockSharp/StockSharp/commit/$STOCKSHARP."
 
-          gh release create "v$VERSION" archives/* packages/*.nupkg \
+          gh release create "v$RELEASE_VERSION" archives/* packages/*.nupkg \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "Odysseus $VERSION" \
+            --title "Odysseus $RELEASE_VERSION" \
             --notes "$notes" \
             --generate-notes "${options[@]}"

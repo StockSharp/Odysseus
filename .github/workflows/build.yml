@@ -68,7 +68,7 @@ jobs:
 
       # Pinned to a patch rather than to `10.0.x`. With TreatWarningsAsErrors on, every analyser warning a
       # newer SDK introduces turns a commit that changed nothing into a red build, so the SDK moves when
-      # somebody changes this line and watches what happens.
+      # somebody changes global.json and watches what happens.
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: Odysseus/global.json
