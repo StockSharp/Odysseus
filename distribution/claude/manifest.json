@@ -1,0 +1,42 @@
+{
+  "manifest_version": "0.3",
+  "name": "stocksharp-odysseus",
+  "display_name": "StockSharp Odysseus",
+  "version": "1.0.1",
+  "description": "Generate, compile, validate and backtest StockSharp trading strategies locally.",
+  "long_description": "Requires the .NET 10 SDK on PATH. Includes the matching worker and runner. Projects and historical data stay in the folders selected during installation. Broker connections require separate operator configuration. Product installation is disabled unless the operator explicitly allows products.",
+  "author": { "name": "StockSharp", "url": "https://stocksharp.com" },
+  "repository": { "type": "git", "url": "https://github.com/StockSharp/Odysseus" },
+  "homepage": "https://github.com/StockSharp/Odysseus",
+  "documentation": "https://github.com/StockSharp/Odysseus/blob/main/README.md",
+  "support": "https://github.com/StockSharp/Odysseus/issues",
+  "license": "LicenseRef-StockSharp",
+  "keywords": ["stocksharp", "research", "backtesting", "strategies", "finance"],
+  "compatibility": { "platforms": ["win32", "darwin", "linux"] },
+  "server": {
+    "type": "binary",
+    "entry_point": "server/Odysseus.Server.dll",
+    "mcp_config": {
+      "command": "dotnet",
+      "args": ["${__dirname}/server/Odysseus.Server.dll"],
+      "env": {
+        "ODYSSEUS_PROJECTS_ROOT": "${user_config.projects_root}",
+        "ODYSSEUS_MARKET_DATA": "${user_config.market_data}"
+      }
+    }
+  },
+  "user_config": {
+    "projects_root": {
+      "type": "directory",
+      "title": "Projects folder",
+      "description": "Folder for projects, local databases and research artifacts.",
+      "required": true
+    },
+    "market_data": {
+      "type": "directory",
+      "title": "Historical market data",
+      "description": "Folder for shared historical market data.",
+      "required": true
+    }
+  }
+}

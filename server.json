@@ -1,0 +1,32 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.stocksharp/odysseus",
+  "title": "StockSharp Odysseus",
+  "description": "Generate, compile, validate and backtest StockSharp trading strategies through local MCP.",
+  "repository": {
+    "url": "https://github.com/StockSharp/Odysseus",
+    "source": "github"
+  },
+  "version": "1.0.1",
+  "packages": [
+    {
+      "registryType": "nuget",
+      "identifier": "StockSharp.Odysseus.Mcp",
+      "version": "1.0.1",
+      "runtimeHint": "dnx",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "ODYSSEUS_PROJECTS_ROOT",
+          "description": "Directory for projects, local databases and research artifacts.",
+          "isRequired": true
+        },
+        {
+          "name": "ODYSSEUS_MARKET_DATA",
+          "description": "Directory for shared historical market data.",
+          "isRequired": true
+        }
+      ]
+    }
+  ]
+}

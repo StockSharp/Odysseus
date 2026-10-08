@@ -1,5 +1,7 @@
 # Odysseus
 
+<!-- mcp-name: io.github.stocksharp/odysseus -->
+
 [![MCP on NuGet](https://img.shields.io/nuget/v/StockSharp.Odysseus.Mcp?label=MCP)](https://www.nuget.org/packages/StockSharp.Odysseus.Mcp)
 [![CLI on NuGet](https://img.shields.io/nuget/v/StockSharp.Odysseus.Cli?label=CLI)](https://www.nuget.org/packages/StockSharp.Odysseus.Cli)
 
@@ -8,6 +10,8 @@ that makes a result mean something.
 
 The C# namespaces are rooted at `StockSharp.Odysseus`. The MCP server reports `StockSharp.Odysseus`
 as its name and `StockSharp Odysseus` as its display title; the client configuration below uses `odysseus`.
+
+For MCP Registry publication and Claude Desktop extensions, see [MCP distribution](docs/distribution.md).
 
 You run it locally beside your own agent. It downloads real market history into one StockSharp storage
 every project shares, measures what is actually in it, translates a formal hypothesis into a real
