@@ -35,6 +35,7 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     # Two repositories are checked out side by side, and every command below runs in this one.
     defaults:
       run:
@@ -72,7 +73,9 @@ jobs:
       # process is slow to start, a deadline passes while the work it was timing waited for a core.
       - run: >
           dotnet test "$SOLUTION" --configuration Release --no-build -m:1
+          --filter "FullyQualifiedName~Odysseus" --blame-hang-timeout 120s
           --logger "junit;LogFilePath=$GITHUB_WORKSPACE/artifacts/test-results/{assembly}.xml;FailureBodyFormat=Verbose"
+          -- RunConfiguration.TestSessionTimeout=900000
 
       # A run that failed is the one whose results are worth having.
       - uses: actions/upload-artifact@v7

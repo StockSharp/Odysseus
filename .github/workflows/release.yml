@@ -20,6 +20,16 @@ on:
         description: Version to release, without the leading v. A tag of that name is created.
         required: true
         type: string
+      dry_run:
+        description: Build and verify release assets without publishing packages, a tag or a release.
+        required: true
+        type: boolean
+        default: true
+      verify_only:
+        description: Verify NuGet trusted publishing without building or publishing anything.
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -32,6 +42,7 @@ jobs:
   # Settled once, so that the three archives are one version built against one state of the platform.
   prepare:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
       stocksharp: ${{ steps.stocksharp.outputs.commit }}
@@ -62,7 +73,25 @@ jobs:
 
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
+  verify-nuget:
+    name: Verify NuGet trusted publishing
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Report successful authentication
+        run: echo "NuGet trusted publishing authentication succeeded. No packages were uploaded." >> "$GITHUB_STEP_SUMMARY"
+
   package:
+    if: '!inputs.verify_only'
     needs: prepare
     strategy:
       matrix:
@@ -171,6 +200,7 @@ jobs:
           retention-days: 7
 
   publish:
+    if: github.event_name == 'push' || (!inputs.dry_run && !inputs.verify_only)
     needs: [prepare, package]
     runs-on: ubuntu-latest
     permissions:
