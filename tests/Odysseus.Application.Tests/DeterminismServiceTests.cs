@@ -1,10 +1,10 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 using System.Threading;
 
-using Odysseus.Persistence;
-using Odysseus.Platform;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// Whether a candidate gives the same answer twice: what its source reaches, and two runs set side by side.

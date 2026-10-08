@@ -1,8 +1,8 @@
-namespace Odysseus.Server;
+namespace StockSharp.Odysseus.Server;
 
 using System.Collections.Generic;
 
-using Odysseus.Engine;
+using StockSharp.Odysseus.Engine;
 
 /// <summary>
 /// The project tools an agent sees over MCP.

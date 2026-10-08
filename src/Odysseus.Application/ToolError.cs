@@ -1,4 +1,4 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 /// <summary>
 /// A failure, in the shape the published error contract declares.

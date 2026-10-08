@@ -1,6 +1,6 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
-using Odysseus.Platform;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// What <c>analyze_market</c> actually measures, checked against series whose statistics can be worked

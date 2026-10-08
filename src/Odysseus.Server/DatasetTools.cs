@@ -1,4 +1,4 @@
-namespace Odysseus.Server;
+namespace StockSharp.Odysseus.Server;
 
 /// <summary>
 /// The dataset tools an agent sees over MCP.

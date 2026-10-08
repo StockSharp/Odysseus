@@ -1,4 +1,4 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 /// <summary>
 /// Keeps what each project researches: the description of its dataset, and the bars behind it in the

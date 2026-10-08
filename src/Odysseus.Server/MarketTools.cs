@@ -1,4 +1,4 @@
-namespace Odysseus.Server;
+namespace StockSharp.Odysseus.Server;
 
 /// <summary>
 /// The tools that bring real history in and say what is in it.

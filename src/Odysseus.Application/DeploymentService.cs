@@ -1,8 +1,8 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 using System.Linq;
 
-using Odysseus.Spec;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// What a deployment has done, next to what the backtest said it would.

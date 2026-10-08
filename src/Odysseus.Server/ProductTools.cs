@@ -1,6 +1,6 @@
-namespace Odysseus.Server;
+namespace StockSharp.Odysseus.Server;
 
-using Odysseus.Products;
+using StockSharp.Odysseus.Products;
 
 /// <summary>
 /// Installing StockSharp products on the machine this server runs on.

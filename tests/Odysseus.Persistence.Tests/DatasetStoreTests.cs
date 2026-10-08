@@ -1,9 +1,9 @@
-namespace Odysseus.Persistence.Tests;
+namespace StockSharp.Odysseus.Persistence.Tests;
 
 using System.Collections.Generic;
 
-using Odysseus.Application;
-using Odysseus.Platform;
+using StockSharp.Odysseus.Application;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Datasets over the shared market-data storage: the project keeps a description, the bars live once in

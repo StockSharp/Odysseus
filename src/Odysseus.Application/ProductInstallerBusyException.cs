@@ -1,4 +1,4 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 /// <summary>
 /// Raised when another installer holds the machine.

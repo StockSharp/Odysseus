@@ -1,4 +1,4 @@
-namespace Odysseus.Runner.Tests;
+namespace StockSharp.Odysseus.Runner.Tests;
 
 using System.Collections;
 using System.Collections.Generic;

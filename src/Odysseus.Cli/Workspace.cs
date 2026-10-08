@@ -1,10 +1,10 @@
-namespace Odysseus.Cli;
+namespace StockSharp.Odysseus.Cli;
 
-using Odysseus.Broker;
-using Odysseus.Compiler;
-using Odysseus.Engine;
-using Odysseus.Persistence;
-using Odysseus.Platform;
+using StockSharp.Odysseus.Broker;
+using StockSharp.Odysseus.Compiler;
+using StockSharp.Odysseus.Engine;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Everything a command needs, built once.

@@ -1,4 +1,4 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 /// <summary>
 /// Thrown when a dataset that was asked for does not exist.

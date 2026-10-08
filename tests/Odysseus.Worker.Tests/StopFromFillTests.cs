@@ -1,4 +1,4 @@
-namespace Odysseus.Worker.Tests;
+namespace StockSharp.Odysseus.Worker.Tests;
 
 /// <summary>
 /// Where a stop is measured from: the price the position was actually bought at.

@@ -1,8 +1,8 @@
-namespace Odysseus.Runner;
+namespace StockSharp.Odysseus.Runner;
 
 using System.Globalization;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// One deployment, for as long as it trades.

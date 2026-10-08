@@ -1,9 +1,9 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 using System.Linq;
 using System.Text;
 
-using Odysseus.Spec;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// A strategy that has just been declared finished, and where it was kept.

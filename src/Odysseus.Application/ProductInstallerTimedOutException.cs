@@ -1,4 +1,4 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 /// <summary>
 /// Raised when the installer console overran the time it is allowed and was stopped.

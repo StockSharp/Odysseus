@@ -1,6 +1,6 @@
-namespace Odysseus.Spec;
+namespace StockSharp.Odysseus.Spec;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// One thing wrong with a specification.

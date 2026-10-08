@@ -1,9 +1,9 @@
-namespace Odysseus.Broker.Tests;
+namespace StockSharp.Odysseus.Broker.Tests;
 
 using System.Linq;
 using System.Threading.Tasks;
 
-using Odysseus.Platform;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Downloading history through a real connector, against a real broker.

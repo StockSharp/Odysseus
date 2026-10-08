@@ -1,4 +1,4 @@
-namespace Odysseus.Packages;
+namespace StockSharp.Odysseus.Packages;
 
 /// <summary>
 /// One package this package depends on, and the lowest version it will accept.

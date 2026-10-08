@@ -1,12 +1,12 @@
-namespace Odysseus.Worker;
+namespace StockSharp.Odysseus.Worker;
 
 using System.Reflection;
 
 using StockSharp.Algo.Testing;
 using StockSharp.BusinessEntities;
 
-using Odysseus.Domain;
-using Odysseus.Evaluation;
+using StockSharp.Odysseus.Domain;
+using StockSharp.Odysseus.Evaluation;
 
 /// <summary>
 /// Runs a compiled candidate through the StockSharp market emulator.

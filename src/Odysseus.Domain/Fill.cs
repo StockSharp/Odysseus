@@ -1,4 +1,4 @@
-namespace Odysseus.Domain;
+namespace StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// One order fill of a run.

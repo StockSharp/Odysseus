@@ -1,4 +1,4 @@
-namespace Odysseus.Products.Tests;
+namespace StockSharp.Odysseus.Products.Tests;
 
 using System.IO;
 

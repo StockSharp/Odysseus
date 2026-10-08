@@ -1,6 +1,6 @@
-namespace Odysseus.Engine;
+namespace StockSharp.Odysseus.Engine;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>What a runner was asked to do.</summary>
 public enum RunnerCommands

@@ -10,5 +10,5 @@ global using StockSharp.Algo.Commissions;
 global using StockSharp.Algo.Strategies;
 global using StockSharp.Messages;
 
-global using Odysseus.Application;
-global using Odysseus.Platform;
+global using StockSharp.Odysseus.Application;
+global using StockSharp.Odysseus.Platform;

@@ -1,4 +1,4 @@
-namespace Odysseus.Worker.Tests;
+namespace StockSharp.Odysseus.Worker.Tests;
 
 /// <summary>
 /// Searching the numbers a specification declared.

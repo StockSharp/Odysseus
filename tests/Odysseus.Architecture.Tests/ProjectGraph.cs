@@ -1,4 +1,4 @@
-namespace Odysseus.Architecture.Tests;
+namespace StockSharp.Odysseus.Architecture.Tests;
 
 using System.Xml.Linq;
 

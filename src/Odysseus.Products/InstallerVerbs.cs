@@ -1,4 +1,4 @@
-namespace Odysseus.Products;
+namespace StockSharp.Odysseus.Products;
 
 /// <summary>
 /// The commands of the installer console this server ever uses.

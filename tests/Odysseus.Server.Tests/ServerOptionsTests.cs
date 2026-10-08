@@ -1,6 +1,6 @@
-namespace Odysseus.Server.Tests;
+namespace StockSharp.Odysseus.Server.Tests;
 
-using Odysseus.Broker;
+using StockSharp.Odysseus.Broker;
 
 /// <summary>
 /// How this server reads the decisions it is started with.

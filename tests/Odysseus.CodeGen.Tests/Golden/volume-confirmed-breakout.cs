@@ -3,7 +3,7 @@
 // read side by side. Do not edit: the next translation of the same specification would
 // produce this file again and lose the edit.
 
-namespace Odysseus.Generated;
+namespace StockSharp.Odysseus.Generated;
 
 using System;
 using System.Collections.Generic;

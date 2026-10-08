@@ -1,4 +1,4 @@
-namespace Odysseus.Engine.Tests;
+namespace StockSharp.Odysseus.Engine.Tests;
 
 /// <summary>
 /// What crosses between a session and the process that is trading, and whether it comes back the same.

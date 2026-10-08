@@ -1,4 +1,4 @@
-namespace Odysseus.Domain;
+namespace StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// Identifies a research project.

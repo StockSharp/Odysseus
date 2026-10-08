@@ -1,4 +1,4 @@
-namespace Odysseus.CodeGen.Tests;
+namespace StockSharp.Odysseus.CodeGen.Tests;
 
 using System.IO;
 

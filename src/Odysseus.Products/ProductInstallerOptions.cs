@@ -1,4 +1,4 @@
-namespace Odysseus.Products;
+namespace StockSharp.Odysseus.Products;
 
 using System.IO;
 using System.Runtime.InteropServices;

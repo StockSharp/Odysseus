@@ -1,4 +1,4 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 /// <summary>
 /// Reading the file the broker credentials live in.

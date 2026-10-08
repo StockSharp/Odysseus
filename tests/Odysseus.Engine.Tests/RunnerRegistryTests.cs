@@ -1,4 +1,4 @@
-namespace Odysseus.Engine.Tests;
+namespace StockSharp.Odysseus.Engine.Tests;
 
 using System.Collections.Concurrent;
 using System.Linq;

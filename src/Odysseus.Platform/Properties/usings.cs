@@ -4,4 +4,4 @@ global using System.Linq;
 
 global using StockSharp.Messages;
 
-global using Odysseus.Domain;
+global using StockSharp.Odysseus.Domain;

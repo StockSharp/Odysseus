@@ -1,6 +1,6 @@
-namespace Odysseus.Persistence.Tests;
+namespace StockSharp.Odysseus.Persistence.Tests;
 
-using Odysseus.Application;
+using StockSharp.Odysseus.Application;
 
 /// <summary>
 /// Projects and their audit trail. A project has to come back after a restart exactly as it was left,

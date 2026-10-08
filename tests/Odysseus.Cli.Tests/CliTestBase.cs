@@ -1,10 +1,10 @@
-namespace Odysseus.Cli.Tests;
+namespace StockSharp.Odysseus.Cli.Tests;
 
 using System.Threading;
 
-using Odysseus.Application;
-using Odysseus.Cli.Console;
-using Odysseus.TestKit;
+using StockSharp.Odysseus.Application;
+using StockSharp.Odysseus.Cli.Console;
+using StockSharp.Odysseus.TestKit;
 
 using Con = System.Console;
 

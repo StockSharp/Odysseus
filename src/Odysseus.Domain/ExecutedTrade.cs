@@ -1,4 +1,4 @@
-namespace Odysseus.Domain;
+namespace StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// One position that was opened and closed during a run.

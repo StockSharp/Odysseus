@@ -1,4 +1,4 @@
-namespace Odysseus.Worker.Tests;
+namespace StockSharp.Odysseus.Worker.Tests;
 
 /// <summary>
 /// Which bar a decision is taken on, and which bar pays for it.

@@ -1,4 +1,4 @@
-namespace Odysseus.Spec.Tests;
+namespace StockSharp.Odysseus.Spec.Tests;
 
 using System.IO;
 using System.Text.Json;

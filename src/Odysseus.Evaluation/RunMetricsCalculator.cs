@@ -1,10 +1,10 @@
-namespace Odysseus.Evaluation;
+namespace StockSharp.Odysseus.Evaluation;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// Turns what a run did into the numbers a verdict is read from.

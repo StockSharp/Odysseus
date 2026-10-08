@@ -1,8 +1,8 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
-using Odysseus.Persistence;
-using Odysseus.Platform;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// Checking a specification, and recording one as a project's next revision.

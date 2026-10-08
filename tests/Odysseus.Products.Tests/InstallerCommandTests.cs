@@ -1,4 +1,4 @@
-namespace Odysseus.Products.Tests;
+namespace StockSharp.Odysseus.Products.Tests;
 
 /// <summary>
 /// How a command line for the installer console is built.

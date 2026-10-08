@@ -1,10 +1,10 @@
-namespace Odysseus.Broker.Tests;
+namespace StockSharp.Odysseus.Broker.Tests;
 
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-using Odysseus.Packages;
+using StockSharp.Odysseus.Packages;
 
 /// <summary>
 /// What happens to a connector that is refused, and where in the sequence it is refused.
@@ -176,7 +176,7 @@ public class ConnectorLoadingTests : OdysseusTestBase
 	public void AnAdapterNameThatIsNotThereIsRefusedWithWhatIsThere()
 	{
 		var refusal = Throws<ConnectorRefusedException>(
-			() => AdapterCatalog.Select(typeof(FeedAdapter).Assembly, "Odysseus.Broker.Tests.AbsentAdapter"));
+			() => AdapterCatalog.Select(typeof(FeedAdapter).Assembly, "StockSharp.Odysseus.Broker.Tests.AbsentAdapter"));
 
 		IsTrue(refusal.Message.Contains("AbsentAdapter", StringComparison.Ordinal), refusal.Message);
 		IsTrue(refusal.Message.Contains(typeof(FeedAdapter).FullName, StringComparison.Ordinal), refusal.Message);

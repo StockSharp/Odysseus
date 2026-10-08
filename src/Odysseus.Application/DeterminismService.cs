@@ -1,11 +1,11 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 
-using Odysseus.Spec;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// Reads a strategy's source for what would make its results differ between runs over the same data.

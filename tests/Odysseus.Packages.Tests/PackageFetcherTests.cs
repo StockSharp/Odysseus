@@ -1,4 +1,4 @@
-namespace Odysseus.Packages.Tests;
+namespace StockSharp.Odysseus.Packages.Tests;
 
 using System;
 using System.IO;
@@ -6,8 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Odysseus.Packages;
-using Odysseus.TestKit;
+using StockSharp.Odysseus.Packages;
+using StockSharp.Odysseus.TestKit;
 
 /// <summary>
 /// Obtaining a connector package, without a network.

@@ -1,11 +1,11 @@
-namespace Odysseus.Products;
+namespace StockSharp.Odysseus.Products;
 
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Odysseus.Application;
+using StockSharp.Odysseus.Application;
 
 /// <summary>
 /// Installs StockSharp products by driving the vendor's installer console as a process.

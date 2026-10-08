@@ -3,7 +3,6 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<AssemblyName>odysseus</AssemblyName>
-		<RootNamespace>Odysseus.Cli</RootNamespace>
 		<PackageId>StockSharp.Odysseus.Cli</PackageId>
 		<ToolCommandName>odysseus</ToolCommandName>
 

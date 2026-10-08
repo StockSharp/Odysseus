@@ -1,4 +1,4 @@
-namespace Odysseus.InstallerStub;
+namespace StockSharp.Odysseus.InstallerStub;
 
 using System;
 using System.Globalization;

@@ -1,4 +1,4 @@
-namespace Odysseus.Domain;
+namespace StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// Parts a dataset is divided into, by time and never by sampling.

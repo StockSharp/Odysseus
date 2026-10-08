@@ -1,9 +1,9 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 using System.Globalization;
 
-using Odysseus.Persistence;
-using Odysseus.Platform;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Importing a dataset into a project, and what an agent is allowed to learn about it afterwards.

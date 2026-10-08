@@ -1,4 +1,4 @@
-namespace Odysseus.Server;
+namespace StockSharp.Odysseus.Server;
 
 /// <summary>
 /// The tool that spends the closed part of the history, and the one that says whether it is still there.

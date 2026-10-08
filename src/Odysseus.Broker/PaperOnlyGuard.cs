@@ -1,4 +1,4 @@
-namespace Odysseus.Broker;
+namespace StockSharp.Odysseus.Broker;
 
 /// <summary>
 /// Makes an adapter say it is pointed at a paper venue, and refuses it when it cannot.

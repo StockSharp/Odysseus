@@ -1,6 +1,6 @@
-namespace Odysseus.Architecture.Tests;
+namespace StockSharp.Odysseus.Architecture.Tests;
 
-using Odysseus.TestKit;
+using StockSharp.Odysseus.TestKit;
 
 /// <summary>
 /// Enforces the layering: the domain knows nothing, the application layer reaches technology through

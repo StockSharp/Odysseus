@@ -1,8 +1,8 @@
-namespace Odysseus.Spec;
+namespace StockSharp.Odysseus.Spec;
 
 using System.Text.Json.Serialization;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>Types a declared parameter can take.</summary>
 public enum ParameterTypes

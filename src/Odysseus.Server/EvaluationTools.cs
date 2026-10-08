@@ -1,4 +1,4 @@
-namespace Odysseus.Server;
+namespace StockSharp.Odysseus.Server;
 
 /// <summary>
 /// The tool that measures a candidate, and the one that reads the measurement back.

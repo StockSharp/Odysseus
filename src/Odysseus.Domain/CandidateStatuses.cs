@@ -1,4 +1,4 @@
-namespace Odysseus.Domain;
+namespace StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// Stages a strategy candidate passes through, in the order it passes through them.

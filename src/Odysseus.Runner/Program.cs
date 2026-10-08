@@ -1,9 +1,9 @@
-namespace Odysseus.Runner;
+namespace StockSharp.Odysseus.Runner;
 
 using System.Text;
 using System.Text.Json;
 
-using Odysseus.Broker;
+using StockSharp.Odysseus.Broker;
 
 /// <summary>
 /// The process one deployment trades in.

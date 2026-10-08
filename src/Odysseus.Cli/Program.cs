@@ -1,9 +1,9 @@
-namespace Odysseus.Cli;
+namespace StockSharp.Odysseus.Cli;
 
 using System.Diagnostics;
 
-using Odysseus.Cli.Console;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Cli.Console;
+using StockSharp.Odysseus.Spec;
 
 using Con = System.Console;
 

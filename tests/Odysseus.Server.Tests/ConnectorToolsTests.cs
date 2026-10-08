@@ -1,4 +1,4 @@
-namespace Odysseus.Server.Tests;
+namespace StockSharp.Odysseus.Server.Tests;
 
 /// <summary>
 /// Which of the connector tools a hosted server answers, and what it does instead.

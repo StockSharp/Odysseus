@@ -1,7 +1,7 @@
-namespace Odysseus.Cli.Tests;
+namespace StockSharp.Odysseus.Cli.Tests;
 
-using Odysseus.Cli.Console;
-using Odysseus.TestKit;
+using StockSharp.Odysseus.Cli.Console;
+using StockSharp.Odysseus.TestKit;
 
 using Con = System.Console;
 

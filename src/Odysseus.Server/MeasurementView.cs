@@ -1,4 +1,4 @@
-namespace Odysseus.Server;
+namespace StockSharp.Odysseus.Server;
 
 /// <summary>
 /// Laying a measurement out for the model that asked for it.

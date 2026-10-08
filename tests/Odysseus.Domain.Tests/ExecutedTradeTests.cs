@@ -1,4 +1,4 @@
-namespace Odysseus.Domain.Tests;
+namespace StockSharp.Odysseus.Domain.Tests;
 
 /// <summary>
 /// What a trade came to.

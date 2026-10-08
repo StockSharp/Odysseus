@@ -1,4 +1,4 @@
-namespace Odysseus.Engine.Tests;
+namespace StockSharp.Odysseus.Engine.Tests;
 
 /// <summary>
 /// What the server does when the process running a candidate misbehaves.
@@ -321,7 +321,7 @@ public class WorkerHostTests : OdysseusTestBase
 	private static BacktestRequest Request()
 		=> new(
 			[1, 2, 3],
-			"Odysseus.Generated.Candidate",
+			"StockSharp.Odysseus.Generated.Candidate",
 			new Dictionary<string, decimal>(StringComparer.Ordinal),
 			"DEMO",
 			TimeSpan.FromMinutes(5),

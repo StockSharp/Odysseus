@@ -5,9 +5,9 @@ global using System.Threading.Tasks;
 
 global using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-global using Odysseus.Application;
-global using Odysseus.Compiler;
-global using Odysseus.Domain;
-global using Odysseus.Platform;
-global using Odysseus.Spec;
-global using Odysseus.TestKit;
+global using StockSharp.Odysseus.Application;
+global using StockSharp.Odysseus.Compiler;
+global using StockSharp.Odysseus.Domain;
+global using StockSharp.Odysseus.Platform;
+global using StockSharp.Odysseus.Spec;
+global using StockSharp.Odysseus.TestKit;

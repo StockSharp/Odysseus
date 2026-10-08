@@ -1,4 +1,4 @@
-namespace Odysseus.Products;
+namespace StockSharp.Odysseus.Products;
 
 /// <summary>
 /// Builds the command line for one invocation of the installer console.

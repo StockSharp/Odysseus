@@ -1,4 +1,4 @@
-namespace Odysseus.Domain.Tests;
+namespace StockSharp.Odysseus.Domain.Tests;
 
 /// <summary>
 /// Reading what a symbol carries from the symbol itself.

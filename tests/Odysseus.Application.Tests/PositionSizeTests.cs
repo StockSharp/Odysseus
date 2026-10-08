@@ -1,6 +1,6 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
-using Odysseus.Spec;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// How large one position is.

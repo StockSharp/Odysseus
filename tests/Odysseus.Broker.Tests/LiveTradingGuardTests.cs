@@ -1,4 +1,4 @@
-namespace Odysseus.Broker.Tests;
+namespace StockSharp.Odysseus.Broker.Tests;
 
 using System.Collections.Generic;
 
@@ -6,7 +6,7 @@ using Ecng.Common;
 
 using StockSharp.Messages;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// The guard on the other side of the paper claim.

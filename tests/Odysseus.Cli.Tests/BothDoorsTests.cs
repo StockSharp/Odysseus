@@ -1,10 +1,10 @@
-namespace Odysseus.Cli.Tests;
+namespace StockSharp.Odysseus.Cli.Tests;
 
 using System.Text.Json;
 
-using Odysseus.Application;
-using Odysseus.Broker;
-using Odysseus.Domain;
+using StockSharp.Odysseus.Application;
+using StockSharp.Odysseus.Broker;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// The rules that hold on both ways in.

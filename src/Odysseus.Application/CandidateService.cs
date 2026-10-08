@@ -1,8 +1,8 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 using System.Text;
 
-using Odysseus.Spec;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// Building a specification into a strategy that can be run.

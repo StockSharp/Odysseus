@@ -1,4 +1,4 @@
-namespace Odysseus.CodeGen;
+namespace StockSharp.Odysseus.CodeGen;
 
 using System;
 using System.Text;

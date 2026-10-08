@@ -1,4 +1,4 @@
-namespace Odysseus.Compiler;
+namespace StockSharp.Odysseus.Compiler;
 
 using System.IO;
 using System.Security.Cryptography;

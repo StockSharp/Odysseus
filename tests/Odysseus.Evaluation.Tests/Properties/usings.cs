@@ -3,6 +3,6 @@ global using System.Linq;
 
 global using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-global using Odysseus.Domain;
-global using Odysseus.Evaluation;
-global using Odysseus.TestKit;
+global using StockSharp.Odysseus.Domain;
+global using StockSharp.Odysseus.Evaluation;
+global using StockSharp.Odysseus.TestKit;

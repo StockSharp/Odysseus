@@ -1,10 +1,10 @@
-namespace Odysseus.Evaluation;
+namespace StockSharp.Odysseus.Evaluation;
 
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// Joins the fills of a run into the trades it made.

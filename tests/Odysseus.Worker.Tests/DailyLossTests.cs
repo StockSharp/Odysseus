@@ -1,4 +1,4 @@
-namespace Odysseus.Worker.Tests;
+namespace StockSharp.Odysseus.Worker.Tests;
 
 /// <summary>
 /// The limit on what one day may lose.

@@ -1,4 +1,4 @@
-namespace Odysseus.Engine.Tests;
+namespace StockSharp.Odysseus.Engine.Tests;
 
 /// <summary>
 /// Telling a runner from whatever now holds its process number.

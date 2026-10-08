@@ -1,4 +1,4 @@
-namespace Odysseus.Persistence;
+namespace StockSharp.Odysseus.Persistence;
 
 using Microsoft.Data.Sqlite;
 

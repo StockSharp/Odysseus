@@ -1,6 +1,6 @@
-namespace Odysseus.Server;
+namespace StockSharp.Odysseus.Server;
 
-using Odysseus.Spec;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// The specification tools an agent sees over MCP.

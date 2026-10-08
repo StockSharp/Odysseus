@@ -1,8 +1,8 @@
-namespace Odysseus.Products;
+namespace StockSharp.Odysseus.Products;
 
 using System.Text.RegularExpressions;
 
-using Odysseus.Application;
+using StockSharp.Odysseus.Application;
 
 /// <summary>
 /// What one invocation printed, once it has been read.

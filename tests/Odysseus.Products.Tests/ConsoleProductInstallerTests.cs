@@ -1,11 +1,11 @@
-namespace Odysseus.Products.Tests;
+namespace StockSharp.Odysseus.Products.Tests;
 
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Odysseus.Application;
+using StockSharp.Odysseus.Application;
 
 /// <summary>
 /// What happens when the program this server drives is not there, or is there and misbehaves.

@@ -1,6 +1,6 @@
-namespace Odysseus.Cli.Tests;
+namespace StockSharp.Odysseus.Cli.Tests;
 
-using Odysseus.Spec;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// What the commands promise a person at a terminal.

@@ -1,4 +1,4 @@
-namespace Odysseus.Worker.Tests;
+namespace StockSharp.Odysseus.Worker.Tests;
 
 using System.IO;
 using System.Threading;

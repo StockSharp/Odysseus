@@ -1,4 +1,4 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 using System.Globalization;
 using System.Linq;
@@ -6,8 +6,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-using Odysseus.Evaluation;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Evaluation;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// A named set of assumptions a run is measured under.

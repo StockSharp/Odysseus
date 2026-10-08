@@ -1,6 +1,6 @@
-namespace Odysseus.Broker;
+namespace StockSharp.Odysseus.Broker;
 
-using Odysseus.Platform;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Makes the adapter this server is to talk to the venue through.

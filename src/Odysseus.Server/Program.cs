@@ -1,15 +1,15 @@
-namespace Odysseus.Server;
+namespace StockSharp.Odysseus.Server;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using Odysseus.Broker;
-using Odysseus.Compiler;
-using Odysseus.Engine;
-using Odysseus.Persistence;
-using Odysseus.Platform;
-using Odysseus.Products;
+using StockSharp.Odysseus.Broker;
+using StockSharp.Odysseus.Compiler;
+using StockSharp.Odysseus.Engine;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
+using StockSharp.Odysseus.Products;
 
 /// <summary>
 /// Entry point of the Odysseus MCP server.
@@ -247,7 +247,12 @@ public static class Program
 			services.GetRequiredService<IClock>()));
 
 		builder.Services
-			.AddMcpServer()
+			.AddMcpServer(options => options.ServerInfo = new()
+			{
+				Name = "StockSharp.Odysseus",
+				Title = "StockSharp Odysseus",
+				Version = ServerVersion.Current,
+			})
 			.WithStdioServerTransport()
 			.WithToolsFromAssembly();
 

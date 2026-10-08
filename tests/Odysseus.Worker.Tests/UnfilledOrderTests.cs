@@ -1,4 +1,4 @@
-namespace Odysseus.Worker.Tests;
+namespace StockSharp.Odysseus.Worker.Tests;
 
 /// <summary>
 /// A run whose orders were larger than the market that was there to fill them.

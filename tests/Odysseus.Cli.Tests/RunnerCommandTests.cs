@@ -1,7 +1,7 @@
-namespace Odysseus.Cli.Tests;
+namespace StockSharp.Odysseus.Cli.Tests;
 
-using Odysseus.Domain;
-using Odysseus.Engine;
+using StockSharp.Odysseus.Domain;
+using StockSharp.Odysseus.Engine;
 
 /// <summary>
 /// What the two commands over a running deployment do, and what they refuse.

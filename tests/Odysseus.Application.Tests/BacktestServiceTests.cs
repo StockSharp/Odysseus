@@ -1,11 +1,11 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 using System.Threading;
 
-using Odysseus.Engine;
-using Odysseus.Persistence;
-using Odysseus.Platform;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Engine;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// What a run costs, and what it costs when it does not happen.

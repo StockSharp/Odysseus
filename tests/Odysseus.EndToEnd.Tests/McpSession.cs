@@ -1,4 +1,4 @@
-﻿namespace Odysseus.EndToEnd.Tests;
+﻿namespace StockSharp.Odysseus.EndToEnd.Tests;
 
 using System.Diagnostics;
 using System.Text;
@@ -18,6 +18,9 @@ public sealed class McpSession : IDisposable
 	private readonly SemaphoreSlim _gate = new(1, 1);
 
 	private int _id;
+
+	/// <summary>The identity received in the initialization response.</summary>
+	public JsonElement ServerInfo { get; private set; }
 
 	private McpSession(Process process)
 	{
@@ -179,12 +182,14 @@ public sealed class McpSession : IDisposable
 		// assertion, and a tight one only turns load into a false failure.
 		using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
 
-		await CallAsync("initialize", new
+		var initialized = await CallAsync("initialize", new
 		{
 			protocolVersion = "2025-06-18",
 			capabilities = new { },
 			clientInfo = new { name = "odysseus-e2e", version = "1.0.0" },
 		}, timeout.Token);
+
+		ServerInfo = initialized.GetProperty("serverInfo").Clone();
 
 		await WriteAsync(new { jsonrpc = "2.0", method = "notifications/initialized" }, timeout.Token);
 	}

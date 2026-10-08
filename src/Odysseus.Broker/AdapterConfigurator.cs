@@ -1,4 +1,4 @@
-namespace Odysseus.Broker;
+namespace StockSharp.Odysseus.Broker;
 
 using System.ComponentModel.DataAnnotations;
 using System.Linq;

@@ -4,4 +4,4 @@ global using System.Collections.Generic;
 global using Ecng.Common;
 global using StockSharp.Messages;
 
-global using Odysseus.Application;
+global using StockSharp.Odysseus.Application;

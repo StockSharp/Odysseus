@@ -1,4 +1,4 @@
-namespace Odysseus.Spec;
+namespace StockSharp.Odysseus.Spec;
 
 /// <summary>How an indicator is fed.</summary>
 public enum IndicatorSources

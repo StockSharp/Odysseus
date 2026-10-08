@@ -1,6 +1,6 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
-using Odysseus.Persistence;
+using StockSharp.Odysseus.Persistence;
 
 /// <summary>
 /// The project use cases the MCP tools sit on. The caller is an autonomous agent over a connection

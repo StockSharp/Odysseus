@@ -1,4 +1,4 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 /// <summary>How much, and how violently, the instrument moves.</summary>
 /// <param name="MedianBarRangePercent">Middle bar's high-to-low range, as a percentage of its close.</param>

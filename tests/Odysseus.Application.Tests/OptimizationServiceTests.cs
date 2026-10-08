@@ -1,10 +1,10 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 using System.Threading;
 
-using Odysseus.Persistence;
-using Odysseus.Platform;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// What a search costs, and what asking for the same one twice costs.

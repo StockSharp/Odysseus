@@ -1,4 +1,4 @@
-namespace Odysseus.Domain.Tests;
+namespace StockSharp.Odysseus.Domain.Tests;
 
 /// <summary>
 /// The research budget: what a project was granted, and what the figures say is left of it.

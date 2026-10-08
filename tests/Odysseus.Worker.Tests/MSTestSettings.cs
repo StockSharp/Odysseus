@@ -1,6 +1,6 @@
 [assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
 
-namespace Odysseus.Worker.Tests;
+namespace StockSharp.Odysseus.Worker.Tests;
 
 /// <summary>
 /// What the assembly leaves behind.

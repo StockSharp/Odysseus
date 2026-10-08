@@ -1,4 +1,4 @@
-namespace Odysseus.Engine;
+namespace StockSharp.Odysseus.Engine;
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// Where a runner is told to get a connector from.

@@ -1,4 +1,4 @@
-namespace Odysseus.Persistence;
+namespace StockSharp.Odysseus.Persistence;
 
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -23,7 +23,7 @@ public sealed class TypedIdJsonConverter : JsonConverterFactory
 	{
 		ArgumentNullException.ThrowIfNull(typeToConvert);
 
-		if (!typeToConvert.IsValueType || typeToConvert.Namespace != "Odysseus.Domain")
+		if (!typeToConvert.IsValueType || typeToConvert.Namespace != typeof(ProjectId).Namespace)
 			return false;
 
 		using (_sync.EnterScope())

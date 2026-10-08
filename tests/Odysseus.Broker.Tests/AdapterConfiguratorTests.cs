@@ -1,4 +1,4 @@
-namespace Odysseus.Broker.Tests;
+namespace StockSharp.Odysseus.Broker.Tests;
 
 using System.Collections.Generic;
 using System.Linq;

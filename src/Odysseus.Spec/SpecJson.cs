@@ -1,4 +1,4 @@
-namespace Odysseus.Spec;
+namespace StockSharp.Odysseus.Spec;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;

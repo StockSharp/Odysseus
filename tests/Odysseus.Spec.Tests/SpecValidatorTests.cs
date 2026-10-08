@@ -1,4 +1,4 @@
-namespace Odysseus.Spec.Tests;
+namespace StockSharp.Odysseus.Spec.Tests;
 
 /// <summary>
 /// Checking a specification before anything is generated from it.

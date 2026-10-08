@@ -1,6 +1,6 @@
-namespace Odysseus.EndToEnd.Tests;
+namespace StockSharp.Odysseus.EndToEnd.Tests;
 
-using Odysseus.TestKit;
+using StockSharp.Odysseus.TestKit;
 
 /// <summary>
 /// The server as an agent meets it: a real process, a real handshake, real tool calls over standard
@@ -107,6 +107,16 @@ public class McpSessionTests : OdysseusTestBase
 
 		if (_root is not null && Directory.Exists(_root))
 			Directory.Delete(_root, recursive: true);
+	}
+
+	/// <summary>The handshake reports the StockSharp product identity and display name.</summary>
+	[TestMethod]
+	[Timeout(60000, CooperativeCancellation = true)]
+	public void ServerReportsItsStockSharpIdentity()
+	{
+		AreEqual("StockSharp.Odysseus", _session.ServerInfo.GetProperty("name").GetString());
+		AreEqual("StockSharp Odysseus", _session.ServerInfo.GetProperty("title").GetString());
+		IsFalse(string.IsNullOrWhiteSpace(_session.ServerInfo.GetProperty("version").GetString()));
 	}
 
 	/// <summary>

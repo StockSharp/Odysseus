@@ -1,4 +1,4 @@
-namespace Odysseus.Platform;
+namespace StockSharp.Odysseus.Platform;
 
 using System.IO;
 using System.Threading;
@@ -8,7 +8,7 @@ using Ecng.IO;
 
 using StockSharp.Algo.Storages;
 
-using Odysseus.Application;
+using StockSharp.Odysseus.Application;
 
 /// <summary>
 /// The shared market-data storage, kept in a local folder in the trading engine's own format.

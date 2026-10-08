@@ -1,4 +1,4 @@
-namespace Odysseus.Persistence;
+namespace StockSharp.Odysseus.Persistence;
 
 using System.Data.Common;
 using System.Globalization;

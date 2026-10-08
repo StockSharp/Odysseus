@@ -1,4 +1,4 @@
-namespace Odysseus.Engine.Tests;
+namespace StockSharp.Odysseus.Engine.Tests;
 
 /// <summary>
 /// What crosses the process boundary, and whether it comes back the same.
@@ -126,7 +126,7 @@ public class WireRoundTripTests : OdysseusTestBase
 	private static BacktestRequest Backtest()
 		=> new(
 			[1, 2, 3, 4, 5],
-			"Odysseus.Generated.Candidate",
+			"StockSharp.Odysseus.Generated.Candidate",
 			new Dictionary<string, decimal>(StringComparer.Ordinal) { ["Length"] = 20m },
 			"DEMO",
 			TimeSpan.FromMinutes(5),
@@ -140,7 +140,7 @@ public class WireRoundTripTests : OdysseusTestBase
 	private static OptimizationRequest Optimization()
 		=> new(
 			[1, 2, 3],
-			"Odysseus.Generated.Candidate",
+			"StockSharp.Odysseus.Generated.Candidate",
 			"DEMO",
 			TimeSpan.FromMinutes(5),
 			Bars(),

@@ -1,6 +1,6 @@
-namespace Odysseus.Worker.Tests;
+namespace StockSharp.Odysseus.Worker.Tests;
 
-using Odysseus.Evaluation;
+using StockSharp.Odysseus.Evaluation;
 
 /// <summary>
 /// Running a generated strategy through the market emulator.

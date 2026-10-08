@@ -1,10 +1,10 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 using System.Security.Cryptography;
 using System.Text;
 
-using Odysseus.Persistence;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// Building a specification into something that can be run.

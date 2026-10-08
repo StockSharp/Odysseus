@@ -1,11 +1,11 @@
-namespace Odysseus.Application;
+namespace StockSharp.Odysseus.Application;
 
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 
-using Odysseus.Evaluation;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Evaluation;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// What one walk-forward window chose, and what that came to on the stretch it had not seen.

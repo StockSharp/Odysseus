@@ -1,12 +1,12 @@
-namespace Odysseus.Broker.Tests;
+namespace StockSharp.Odysseus.Broker.Tests;
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using Odysseus.Compiler;
-using Odysseus.Domain;
-using Odysseus.Platform;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Compiler;
+using StockSharp.Odysseus.Domain;
+using StockSharp.Odysseus.Platform;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// Putting a strategy on a real paper account.

@@ -1,4 +1,4 @@
-namespace Odysseus.Compiler;
+namespace StockSharp.Odysseus.Compiler;
 
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 

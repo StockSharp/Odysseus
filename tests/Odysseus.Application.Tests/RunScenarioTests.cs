@@ -1,4 +1,4 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 /// <summary>
 /// The scenarios a run may be measured under, held against the place an agent picks one from.

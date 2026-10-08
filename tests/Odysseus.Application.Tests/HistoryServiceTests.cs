@@ -1,12 +1,12 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 using System.Globalization;
 using System.Threading;
 
 using Waiting = System.Threading.Timeout;
 
-using Odysseus.Persistence;
-using Odysseus.Platform;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Downloading history from a broker, making it a project's data, and measuring what is in it.

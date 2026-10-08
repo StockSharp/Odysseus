@@ -6,5 +6,5 @@ global using System.Threading.Tasks;
 
 global using ModelContextProtocol.Server;
 
-global using Odysseus.Application;
-global using Odysseus.Domain;
+global using StockSharp.Odysseus.Application;
+global using StockSharp.Odysseus.Domain;

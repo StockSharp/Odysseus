@@ -1,4 +1,4 @@
-namespace Odysseus.Broker;
+namespace StockSharp.Odysseus.Broker;
 
 using System.Linq;
 using System.Threading;
@@ -8,9 +8,9 @@ using StockSharp.Algo;
 using StockSharp.Algo.Strategies;
 using StockSharp.BusinessEntities;
 
-using Odysseus.Domain;
-using Odysseus.Evaluation;
-using Odysseus.Platform;
+using StockSharp.Odysseus.Domain;
+using StockSharp.Odysseus.Evaluation;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Runs a compiled candidate against the broker's paper account.

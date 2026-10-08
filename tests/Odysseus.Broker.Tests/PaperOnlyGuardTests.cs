@@ -1,4 +1,4 @@
-namespace Odysseus.Broker.Tests;
+namespace StockSharp.Odysseus.Broker.Tests;
 
 using System.Collections.Generic;
 
@@ -6,7 +6,7 @@ using Ecng.Common;
 
 using StockSharp.Messages;
 
-using Odysseus.Platform;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// The one guarantee this product makes about money: whatever connector is loaded, it is on a paper

@@ -1,4 +1,4 @@
-namespace Odysseus.Evaluation.Tests;
+namespace StockSharp.Odysseus.Evaluation.Tests;
 
 using System.Collections.Generic;
 

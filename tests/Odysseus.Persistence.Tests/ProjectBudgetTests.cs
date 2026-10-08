@@ -1,4 +1,4 @@
-namespace Odysseus.Persistence.Tests;
+namespace StockSharp.Odysseus.Persistence.Tests;
 
 using System.Threading;
 

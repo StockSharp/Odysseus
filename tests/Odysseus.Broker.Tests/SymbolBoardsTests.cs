@@ -1,6 +1,6 @@
-namespace Odysseus.Broker.Tests;
+namespace StockSharp.Odysseus.Broker.Tests;
 
-using Odysseus.Platform;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Which market a named symbol is quoted on.

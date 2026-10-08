@@ -1,9 +1,9 @@
-namespace Odysseus.Broker;
+namespace StockSharp.Odysseus.Broker;
 
 using System.Threading;
 using System.Threading.Tasks;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// History downloaded through whichever connector was selected.

@@ -1,4 +1,4 @@
-namespace Odysseus.Platform;
+namespace StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Which market a named symbol is quoted on.

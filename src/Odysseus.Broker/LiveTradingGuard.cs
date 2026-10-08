@@ -1,4 +1,4 @@
-namespace Odysseus.Broker;
+namespace StockSharp.Odysseus.Broker;
 
 /// <summary>
 /// Makes an adapter say it is pointed at the one real account a mandate names, and refuses it otherwise.

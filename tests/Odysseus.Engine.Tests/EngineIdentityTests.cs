@@ -1,4 +1,4 @@
-namespace Odysseus.Engine.Tests;
+namespace StockSharp.Odysseus.Engine.Tests;
 
 /// <summary>
 /// What names a platform build, and what happens when nothing does.

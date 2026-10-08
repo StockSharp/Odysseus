@@ -1,4 +1,4 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 /// <summary>
 /// Cutting a slice into the consecutive stretches walk-forward measures apart.

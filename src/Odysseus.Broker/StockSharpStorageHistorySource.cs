@@ -1,4 +1,4 @@
-namespace Odysseus.Broker;
+namespace StockSharp.Odysseus.Broker;
 
 using System.Net;
 using System.Threading;
@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 using StockSharp.Algo.Storages;
 
-using Odysseus.Domain;
-using Odysseus.Platform;
+using StockSharp.Odysseus.Domain;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// History read from a remote StockSharp storage server through the platform's own remote drive.

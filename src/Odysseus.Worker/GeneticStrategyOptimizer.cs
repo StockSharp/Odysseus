@@ -1,4 +1,4 @@
-namespace Odysseus.Worker;
+namespace StockSharp.Odysseus.Worker;
 
 using Ecng.IO;
 

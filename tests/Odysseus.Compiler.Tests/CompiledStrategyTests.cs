@@ -1,4 +1,4 @@
-namespace Odysseus.Compiler.Tests;
+namespace StockSharp.Odysseus.Compiler.Tests;
 
 using System;
 using System.Linq;
@@ -8,13 +8,13 @@ using System.Reflection;
 
 using StockSharp.Algo.Strategies;
 
-using Odysseus.CodeGen;
-using Odysseus.Compiler;
-using Odysseus.Platform;
-using Odysseus.Spec;
-using Odysseus.TestKit;
+using StockSharp.Odysseus.CodeGen;
+using StockSharp.Odysseus.Compiler;
+using StockSharp.Odysseus.Platform;
+using StockSharp.Odysseus.Spec;
+using StockSharp.Odysseus.TestKit;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// The translator and the compiler together.
@@ -162,6 +162,7 @@ public class CompiledStrategyTests : OdysseusTestBase
 			.Single(t => typeof(Strategy).IsAssignableFrom(t) && !t.IsAbstract);
 
 		AreEqual(translated.ClassName, type.Name);
+		AreEqual("StockSharp.Odysseus.Generated", type.Namespace);
 
 		IsNotNull(Activator.CreateInstance(type), "the generated strategy cannot be created.");
 	}

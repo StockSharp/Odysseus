@@ -1,9 +1,9 @@
-namespace Odysseus.Engine;
+namespace StockSharp.Odysseus.Engine;
 
 using System.Text;
 using System.Text.Json;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// What a runner is to run, and everything it needs in order to reach a broker by itself.

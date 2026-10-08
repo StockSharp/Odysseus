@@ -1,4 +1,4 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 /// <summary>
 /// Building a dataset, and dividing it in time.

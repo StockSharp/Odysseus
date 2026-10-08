@@ -1,4 +1,4 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 /// <summary>
 /// The small file that says which broker a server was started pointed at.

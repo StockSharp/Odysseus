@@ -1,4 +1,4 @@
-namespace Odysseus.Persistence.Tests;
+namespace StockSharp.Odysseus.Persistence.Tests;
 
 /// <summary>
 /// Remembering which closed history has been spent.

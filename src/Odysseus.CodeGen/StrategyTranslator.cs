@@ -1,4 +1,4 @@
-namespace Odysseus.CodeGen;
+namespace StockSharp.Odysseus.CodeGen;
 
 using System;
 using System.Collections.Generic;
@@ -7,9 +7,9 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-using Odysseus.Spec;
+using StockSharp.Odysseus.Spec;
 
-using Odysseus.Domain;
+using StockSharp.Odysseus.Domain;
 
 /// <summary>
 /// What translating a specification produced.
@@ -119,7 +119,7 @@ public static class StrategyTranslator
 		code.Line("// read side by side. Do not edit: the next translation of the same specification would");
 		code.Line("// produce this file again and lose the edit.");
 		code.Blank();
-		code.Line("namespace Odysseus.Generated;");
+		code.Line("namespace StockSharp.Odysseus.Generated;");
 		code.Blank();
 		code.Line("using System;");
 		code.Line("using System.Collections.Generic;");

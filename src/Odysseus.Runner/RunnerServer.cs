@@ -1,4 +1,4 @@
-namespace Odysseus.Runner;
+namespace StockSharp.Odysseus.Runner;
 
 using System.IO.Pipes;
 

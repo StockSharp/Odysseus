@@ -1,4 +1,4 @@
-namespace Odysseus.RunnerStub;
+namespace StockSharp.Odysseus.RunnerStub;
 
 using System;
 using System.IO;
@@ -6,9 +6,9 @@ using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Odysseus.Application;
-using Odysseus.Domain;
-using Odysseus.Engine;
+using StockSharp.Odysseus.Application;
+using StockSharp.Odysseus.Domain;
+using StockSharp.Odysseus.Engine;
 
 /// <summary>
 /// A runner that misbehaves on purpose.

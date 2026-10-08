@@ -1,4 +1,4 @@
-namespace Odysseus.Engine;
+namespace StockSharp.Odysseus.Engine;
 
 using System.IO.Pipes;
 using System.Threading.Tasks;

@@ -1,11 +1,11 @@
-namespace Odysseus.Application.Tests;
+namespace StockSharp.Odysseus.Application.Tests;
 
 using System.Globalization;
 using System.Threading;
 
-using Odysseus.Persistence;
-using Odysseus.Platform;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// Measuring a candidate against the part of the history it was never shown.

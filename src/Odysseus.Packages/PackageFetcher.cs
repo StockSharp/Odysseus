@@ -1,4 +1,4 @@
-namespace Odysseus.Packages;
+namespace StockSharp.Odysseus.Packages;
 
 using System.Threading;
 using System.Threading.Tasks;

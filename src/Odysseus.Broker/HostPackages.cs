@@ -1,11 +1,11 @@
-namespace Odysseus.Broker;
+namespace StockSharp.Odysseus.Broker;
 
 using System.IO;
 using System.Text.Json;
 
 using NuGet.Versioning;
 
-using Odysseus.Packages;
+using StockSharp.Odysseus.Packages;
 
 /// <summary>
 /// Which versions of the platform's packages this server carries.

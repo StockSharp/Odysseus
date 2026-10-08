@@ -1,8 +1,8 @@
-namespace Odysseus.Compiler;
+namespace StockSharp.Odysseus.Compiler;
 
-using Odysseus.Application;
-using Odysseus.CodeGen;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Application;
+using StockSharp.Odysseus.CodeGen;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// Translating a specification and compiling what comes out, as one step.

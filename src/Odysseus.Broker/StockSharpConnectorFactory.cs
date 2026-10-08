@@ -1,12 +1,12 @@
-namespace Odysseus.Broker;
+namespace StockSharp.Odysseus.Broker;
 
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Odysseus.Packages;
-using Odysseus.Platform;
+using StockSharp.Odysseus.Packages;
+using StockSharp.Odysseus.Platform;
 
 /// <summary>
 /// Loads a broker connector out of a published package while the server runs.

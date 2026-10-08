@@ -1,4 +1,4 @@
-namespace Odysseus.Evaluation.Tests;
+namespace StockSharp.Odysseus.Evaluation.Tests;
 
 /// <summary>
 /// Turning the fills an engine reports into the round trips a result is measured on.

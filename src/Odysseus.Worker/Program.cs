@@ -1,6 +1,6 @@
-namespace Odysseus.Worker;
+namespace StockSharp.Odysseus.Worker;
 
-using Odysseus.Engine;
+using StockSharp.Odysseus.Engine;
 
 /// <summary>
 /// The process a compiled candidate actually runs in.

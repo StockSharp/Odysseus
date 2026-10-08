@@ -1,4 +1,4 @@
-namespace Odysseus.Spec;
+namespace StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// A node of the expression tree a rule is written in.

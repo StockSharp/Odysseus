@@ -1,11 +1,11 @@
-namespace Odysseus.WorkerStub;
+namespace StockSharp.Odysseus.WorkerStub;
 
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Odysseus.Engine;
+using StockSharp.Odysseus.Engine;
 
 /// <summary>
 /// A worker that misbehaves on purpose.

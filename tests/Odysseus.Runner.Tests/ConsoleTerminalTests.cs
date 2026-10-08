@@ -1,4 +1,4 @@
-namespace Odysseus.Runner.Tests;
+namespace StockSharp.Odysseus.Runner.Tests;
 
 /// <summary>
 /// The terminal a person starts a runner at, driven from a test without one.

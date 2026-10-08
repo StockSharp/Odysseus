@@ -1,12 +1,12 @@
-namespace Odysseus.Server.Tests;
+namespace StockSharp.Odysseus.Server.Tests;
 
 using System.Linq;
 using System.Text.Json;
 
-using Odysseus.Domain;
-using Odysseus.Persistence;
-using Odysseus.Platform;
-using Odysseus.Spec;
+using StockSharp.Odysseus.Domain;
+using StockSharp.Odysseus.Persistence;
+using StockSharp.Odysseus.Platform;
+using StockSharp.Odysseus.Spec;
 
 /// <summary>
 /// The paper-trading tools as an agent calls them: what each passes on to the deployment and what it

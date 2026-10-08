@@ -1,10 +1,10 @@
-namespace Odysseus.Persistence.Tests;
+namespace StockSharp.Odysseus.Persistence.Tests;
 
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-using Odysseus.Application;
+using StockSharp.Odysseus.Application;
 
 /// <summary>
 /// The content-addressed artifact store. Everything the product claims about a candidate — this source

@@ -1,4 +1,4 @@
-namespace Odysseus.Cli;
+namespace StockSharp.Odysseus.Cli;
 
 using Con = System.Console;
 

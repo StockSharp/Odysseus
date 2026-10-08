@@ -1,4 +1,4 @@
-namespace Odysseus.Domain;
+namespace StockSharp.Odysseus.Domain;
 
 using System.Buffers.Text;
 using System.Security.Cryptography;

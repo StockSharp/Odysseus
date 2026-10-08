@@ -1,4 +1,4 @@
-namespace Odysseus.Runner;
+namespace StockSharp.Odysseus.Runner;
 
 /// <summary>
 /// The terminal this process was started at, when it was started at one.

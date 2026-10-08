@@ -6,6 +6,9 @@
 An MCP server that turns any AI agent into a quantitative researcher — and holds it to the discipline
 that makes a result mean something.
 
+The C# namespaces are rooted at `StockSharp.Odysseus`. The MCP server reports `StockSharp.Odysseus`
+as its name and `StockSharp Odysseus` as its display title; the client configuration below uses `odysseus`.
+
 You run it locally beside your own agent. It downloads real market history into one StockSharp storage
 every project shares, measures what is actually in it, translates a formal hypothesis into a real
 [StockSharp](https://github.com/StockSharp/StockSharp) `Strategy` class, compiles it, backtests it with

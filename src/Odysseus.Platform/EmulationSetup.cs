@@ -1,4 +1,4 @@
-namespace Odysseus.Platform;
+namespace StockSharp.Odysseus.Platform;
 
 using Ecng.IO;
 
