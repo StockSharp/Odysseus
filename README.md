@@ -1,6 +1,6 @@
 # Odysseus
 
-<!-- mcp-name: io.github.stocksharp/odysseus -->
+<!-- mcp-name: io.github.StockSharp/odysseus -->
 
 [![MCP on NuGet](https://img.shields.io/nuget/v/StockSharp.Odysseus.Mcp?label=MCP)](https://www.nuget.org/packages/StockSharp.Odysseus.Mcp)
 [![CLI on NuGet](https://img.shields.io/nuget/v/StockSharp.Odysseus.Cli?label=CLI)](https://www.nuget.org/packages/StockSharp.Odysseus.Cli)

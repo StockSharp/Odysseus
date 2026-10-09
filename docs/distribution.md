@@ -1,7 +1,7 @@
 # MCP directories and Claude Desktop bundles
 
 The MCP handshake name is `StockSharp.Odysseus`; the display name is `StockSharp Odysseus`.
-The official MCP Registry identifier is `io.github.stocksharp/odysseus`.
+The official MCP Registry identifier is `io.github.StockSharp/odysseus`.
 
 ## Official MCP Registry
 

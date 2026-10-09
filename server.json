@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.stocksharp/odysseus",
+  "name": "io.github.StockSharp/odysseus",
   "title": "StockSharp Odysseus",
   "description": "Generate, compile, validate and backtest StockSharp trading strategies through local MCP.",
   "repository": {
