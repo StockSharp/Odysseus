@@ -77,6 +77,9 @@ jobs:
 
       - run: dotnet build "$SOLUTION" --configuration Release --no-restore -p:OdysseusVersion="$ODYSSEUS_VERSION"
 
+      - name: Verify legacy workspace export
+        run: timeout 120s python3 -m unittest discover -s tests/migration -p test_migrate_workspace.py -k Migration -v
+
       # One JUnit report per test assembly. A verbose failure body carries the assertion message and the
       # stack into the report itself. LogFilePath is absolute on purpose: a relative one is resolved
       # against each test project in turn.

@@ -39,7 +39,7 @@ public class ArtifactStoreTests : OdysseusTestBase
 	/// <summary>
 	/// An artifact lives inside the project it belongs to, and nothing lands beside the project folders.
 	/// A project is meant to be a thing you can zip and open elsewhere; a shared pool keyed by hash alone
-	/// would leave the copy with a database pointing at files that stayed behind.
+	/// would leave the copy with records pointing at files that stayed behind.
 	/// </summary>
 	[TestMethod]
 	public async Task AnArtifactLivesInsideItsProject()

@@ -8,9 +8,9 @@ The official MCP Registry identifier is `io.github.StockSharp/odysseus`.
 `server.json` describes the NuGet tool and its local stdio transport. The `mcp-name` comment in the root
 README is included in both NuGet tool packages and proves ownership of the MCP package to the Registry.
 
-Publish NuGet version **1.0.1** through the existing `release.yml` workflow before publishing the
+Publish NuGet version **1.0.2** through the existing `release.yml` workflow before publishing the
 Registry record. Version 1.0.0 has no ownership marker and cannot be updated in place. Run the release
-workflow with `version=1.0.1`, `dry_run=true`, `verify_only=false` first, then with `dry_run=false`.
+workflow with `version=1.0.2`, `dry_run=true`, `verify_only=false` first, then with `dry_run=false`.
 
 From the repository root, authenticate and publish with the official Registry CLI:
 
@@ -29,10 +29,10 @@ The bundle uses the same .NET tool files as the NuGet package, including the mat
 runner. It requires the **.NET 10 SDK on PATH**; the runtime and SDK are not installed by the bundle.
 
 ```powershell
-./scripts/Pack-McpBundle.ps1 -Version 1.0.1
+./scripts/Pack-McpBundle.ps1 -Version 1.0.2
 ```
 
-The result is `artifacts/mcp-distribution/1.0.1/stocksharp-odysseus-1.0.1.mcpb`.
+The result is `artifacts/mcp-distribution/1.0.2/stocksharp-odysseus-1.0.2.mcpb`.
 Use `-NoRestore` only when the project dependencies have already been restored. The script refuses an
 existing staging directory so files from an older package cannot enter a new bundle.
 
@@ -40,6 +40,9 @@ In Claude Desktop, open **Settings → Extensions → Advanced settings → Inst
 the bundle. Choose the projects folder and historical market data folder. Broker connections require
 separate operator configuration; the extension does not configure credentials or enable product
 installation.
+
+Run one MCP process per projects folder. Version 1.0.2 stores metadata as JSON; upgrading an older
+SQLite workspace requires the [one-time export](storage.md) before opening it.
 
 After verifying the installed extension, submit it through the
 [Anthropic desktop extension form](https://clau.de/desktop-extention-submission).

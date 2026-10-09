@@ -12,8 +12,8 @@ using StockSharp.Odysseus.Platform;
 public class DatasetServiceTests : OdysseusTestBase
 {
 	private string _root;
-	private SqliteProjectStore _store;
-	private SqliteOperationLog _operations;
+	private FileProjectStore _store;
+	private FileOperationLog _operations;
 	private FileDatasetStore _datasets;
 	private ProjectService _projects;
 	private DatasetService _service;
@@ -23,8 +23,8 @@ public class DatasetServiceTests : OdysseusTestBase
 	public void CreateService()
 	{
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-tests", Guid.NewGuid().ToString("n"));
-		_store = new SqliteProjectStore(_root);
-		_operations = new SqliteOperationLog(_root);
+		_store = new FileProjectStore(_root);
+		_operations = new FileOperationLog(_root);
 		_datasets = new FileDatasetStore(_root, new LocalBarStorage(Path.Combine(_root, "market-data")));
 
 		var clock = new Clock();

@@ -116,12 +116,15 @@ public class DependencyRulesTests : OdysseusTestBase
 	public void OnlyCompilerReferencesRoslyn()
 		=> AssertPackagePrefixIsExclusiveTo("Microsoft.CodeAnalysis", "Odysseus.Compiler");
 
-	/// <summary>The database is visible in exactly one project as well.</summary>
+	/// <summary>Workspace persistence needs no database package or native database library.</summary>
 	[TestMethod]
-	public void OnlyPersistenceReferencesTheDatabase()
+	public void NoProjectReferencesSqlite()
 	{
-		AssertPackagePrefixIsExclusiveTo("Microsoft.Data.Sqlite", "Odysseus.Persistence");
-		AssertPackagePrefixIsExclusiveTo("SQLitePCLRaw", "Odysseus.Persistence");
+		foreach (var project in EveryProject)
+		{
+			var packages = project.PackageReferences.Where(package => package.Contains("sqlite", StringComparison.OrdinalIgnoreCase)).ToArray();
+			IsTrue(packages.Length == 0, $"{project.Name} references {Join(packages)}; workspace records are plain files.");
+		}
 	}
 
 	/// <summary>

@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "stocksharp-odysseus",
   "display_name": "StockSharp Odysseus",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Generate, compile, validate and backtest StockSharp trading strategies locally.",
   "long_description": "Requires the .NET 10 SDK on PATH. Includes the matching worker and runner. Projects and historical data stay in the folders selected during installation. Broker connections require separate operator configuration. Product installation is disabled unless the operator explicitly allows products.",
   "author": { "name": "StockSharp", "url": "https://stocksharp.com" },
@@ -29,7 +29,7 @@
     "projects_root": {
       "type": "directory",
       "title": "Projects folder",
-      "description": "Folder for projects, local databases and research artifacts.",
+      "description": "Workspace folder for project JSON files and research artifacts. Use one MCP process per workspace.",
       "required": true
     },
     "market_data": {

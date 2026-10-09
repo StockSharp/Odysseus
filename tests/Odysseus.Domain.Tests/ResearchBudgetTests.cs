@@ -6,7 +6,7 @@ namespace StockSharp.Odysseus.Domain.Tests;
 /// <remarks>
 /// The loop is driven by an autonomous agent that will not stop itself, so the limit has to be held by
 /// the server, and it has to be taken before the expensive work starts rather than counted after it
-/// finishes. Taking it happens in the store, inside the statement that changes the figure, and the tests
+/// finishes. Taking it happens in the store, inside the guarded update of the figure, and the tests
 /// for it live there with it: a claim decided against a copy of the number is not a limit, however
 /// carefully it is written. So this type reads and does not spend, and what is tested here is the
 /// reading - which is what every answer about a project's remaining allowance is made of.

@@ -27,8 +27,8 @@ public class HistoryServiceTests : OdysseusTestBase
 	private static readonly DateTime _to = new(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
 
 	private string _root;
-	private SqliteProjectStore _store;
-	private SqliteOperationLog _operations;
+	private FileProjectStore _store;
+	private FileOperationLog _operations;
 	private FileDatasetStore _datasets;
 	private ProjectService _projects;
 
@@ -37,8 +37,8 @@ public class HistoryServiceTests : OdysseusTestBase
 	public void CreateService()
 	{
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-tests", Guid.NewGuid().ToString("n"));
-		_store = new SqliteProjectStore(_root);
-		_operations = new SqliteOperationLog(_root);
+		_store = new FileProjectStore(_root);
+		_operations = new FileOperationLog(_root);
 		_datasets = new FileDatasetStore(_root, new LocalBarStorage(Path.Combine(_root, "market-data")));
 
 		var budget = new ResearchBudget(60, 40, TimeSpan.FromMinutes(45)).ToState();

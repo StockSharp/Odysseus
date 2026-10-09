@@ -149,7 +149,7 @@ public abstract class CliTestBase : OdysseusTestBase
 		}
 		catch (IOException)
 		{
-			// A database file still being let go of. The directory is under the temporary folder and its
+			// A child process is still releasing its files. The directory is under the temporary folder and its
 			// name is a fresh identifier, so nothing later depends on it having gone.
 		}
 	}

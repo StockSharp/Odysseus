@@ -19,8 +19,8 @@ using StockSharp.Odysseus.Spec;
 public class CandidateServiceTests : OdysseusTestBase
 {
 	private string _root;
-	private SqliteProjectStore _store;
-	private SqliteOperationLog _operations;
+	private FileProjectStore _store;
+	private FileOperationLog _operations;
 	private FileSpecStore _specs;
 	private FileArtifactStore _artifacts;
 	private RecordingBuilder _builder;
@@ -33,8 +33,8 @@ public class CandidateServiceTests : OdysseusTestBase
 	public async Task CreateService()
 	{
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-tests", Guid.NewGuid().ToString("n"));
-		_store = new SqliteProjectStore(_root);
-		_operations = new SqliteOperationLog(_root);
+		_store = new FileProjectStore(_root);
+		_operations = new FileOperationLog(_root);
 		_specs = new FileSpecStore(_root);
 		_artifacts = new FileArtifactStore(_root);
 		_builder = new RecordingBuilder();

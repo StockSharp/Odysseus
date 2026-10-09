@@ -355,7 +355,7 @@ public class RunnerLauncherTests : OdysseusTestBase
 		var described = RunnerLauncher.Describe(Options("runner.exe"), Registry().Home(_one), string.Empty);
 
 		IsFalse(described.Environment.ContainsKey("ODYSSEUS_PROJECTS_ROOT"),
-			"the runner was told where the projects are, and it has no business in that database.");
+			"the runner was told where the projects are, and it has no business in their metadata.");
 
 		IsFalse(described.RedirectStandardOutput || described.RedirectStandardError || described.RedirectStandardInput,
 			"the runner's own streams were redirected into a parent that is going to exit before it does.");

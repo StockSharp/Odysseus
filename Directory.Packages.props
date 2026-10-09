@@ -7,7 +7,6 @@
 	<ItemGroup>
 		<PackageVersion Include="Basic.Reference.Assemblies.Net100" Version="1.8.11" />
 		<PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
-		<PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.0" />
 		<PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
 		<PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
 		<!--
@@ -16,8 +15,6 @@
 		into a context of its own, and a product that compiled one in would be a product for one broker.
 		-->
 		<PackageVersion Include="NuGet.Protocol" Version="7.9.0" />
-		<!-- Pinned above the version Microsoft.Data.Sqlite brings in transitively, which carries a known vulnerability. -->
-		<PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.13" />
 		<PackageVersion Include="JsonSchema.Net" Version="9.4.0" />
 		<PackageVersion Include="MSTest" Version="4.0.2" />
 		<PackageVersion Include="MSTest.TestFramework" Version="4.0.2" />

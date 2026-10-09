@@ -4,7 +4,7 @@ namespace StockSharp.Odysseus.Application;
 /// Keeps the strategies a project has finished with.
 /// </summary>
 /// <remarks>
-/// A folder rather than a row in a database, and deliberately so. The thing being kept is a deliverable:
+/// The thing being kept is a deliverable in its own folder:
 /// somebody will want to open the code, read the specification beside it and see the numbers, months
 /// later, on a machine that may not have this server on it at all.
 /// </remarks>

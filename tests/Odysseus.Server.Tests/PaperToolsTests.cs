@@ -43,8 +43,8 @@ public class PaperToolsTests : OdysseusTestBase
 		""";
 
 	private string _root;
-	private SqliteProjectStore _store;
-	private SqliteOperationLog _operations;
+	private FileProjectStore _store;
+	private FileOperationLog _operations;
 	private Runners _runners;
 	private DeploymentService _deployments;
 	private ProjectService _projects;
@@ -57,8 +57,8 @@ public class PaperToolsTests : OdysseusTestBase
 	public void CreateServices()
 	{
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-paper-tools", Guid.NewGuid().ToString("n"));
-		_store = new SqliteProjectStore(_root);
-		_operations = new SqliteOperationLog(_root);
+		_store = new FileProjectStore(_root);
+		_operations = new FileOperationLog(_root);
 		_specs = new FileSpecStore(_root);
 		_runners = new Runners();
 

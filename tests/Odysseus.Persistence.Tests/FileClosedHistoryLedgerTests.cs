@@ -9,19 +9,19 @@ namespace StockSharp.Odysseus.Persistence.Tests;
 /// same exam by someone who has read the paper. This is the record that survives the project.
 /// </remarks>
 [TestClass]
-public class SqliteClosedHistoryLedgerTests : OdysseusTestBase
+public class FileClosedHistoryLedgerTests : OdysseusTestBase
 {
 	private static readonly DateTime _may = new(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc);
 
 	private string _root;
-	private SqliteClosedHistoryLedger _ledger;
+	private FileClosedHistoryLedger _ledger;
 
 	/// <summary>Builds a ledger over temporary storage.</summary>
 	[TestInitialize]
 	public void CreateLedger()
 	{
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-tests", Guid.NewGuid().ToString("n"));
-		_ledger = new SqliteClosedHistoryLedger(_root);
+		_ledger = new FileClosedHistoryLedger(_root);
 	}
 
 	/// <summary>Releases storage.</summary>
@@ -156,7 +156,7 @@ public class SqliteClosedHistoryLedgerTests : OdysseusTestBase
 		await _ledger.ClaimAsync(Window("NVDA", _may, _may.AddDays(30)), CancellationToken);
 
 		_ledger.Dispose();
-		_ledger = new SqliteClosedHistoryLedger(_root);
+		_ledger = new FileClosedHistoryLedger(_root);
 
 		var found = await _ledger.FindOverlappingAsync("NVDA", _may, _may.AddDays(30), CancellationToken);
 
@@ -215,18 +215,14 @@ public class SqliteClosedHistoryLedgerTests : OdysseusTestBase
 	}
 
 	/// <summary>
-	/// Claims made at once, through two ledgers over the same file the way the server and the CLI open it,
-	/// grant the stretch once. Checked and written in two steps, every one of them could pass the check
-	/// before any wrote.
+	/// Concurrent requests in one server grant the stretch once.
 	/// </summary>
 	[TestMethod]
 	public async Task ClaimsMadeAtOnceGrantTheStretchOnce()
 	{
-		using var other = new SqliteClosedHistoryLedger(_root);
-
 		var claims = Enumerable
 			.Range(0, 16)
-			.Select(i => (i % 2 == 0 ? _ledger : other).ClaimAsync(Window("NVDA", _may, _may.AddDays(30)), CancellationToken).AsTask());
+			.Select(_ => _ledger.ClaimAsync(Window("NVDA", _may, _may.AddDays(30)), CancellationToken).AsTask());
 
 		var answers = await Task.WhenAll(claims);
 

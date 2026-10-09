@@ -13,5 +13,9 @@ artifacts/
 # Test run artefacts
 TestResults/
 
+# Python bytecode produced by the legacy workspace migration tests.
+__pycache__/
+*.pyc
+
 # Runtime data: the projects root a server or a test run creates beside the repository.
 projects/

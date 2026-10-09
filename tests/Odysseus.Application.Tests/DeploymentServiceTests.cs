@@ -22,8 +22,8 @@ using StockSharp.Odysseus.Spec;
 public class DeploymentServiceTests : OdysseusTestBase
 {
 	private string _root;
-	private SqliteProjectStore _store;
-	private SqliteOperationLog _operations;
+	private FileProjectStore _store;
+	private FileOperationLog _operations;
 	private FileDatasetStore _datasets;
 	private FileSpecStore _specs;
 	private FileArtifactStore _artifacts;
@@ -38,8 +38,8 @@ public class DeploymentServiceTests : OdysseusTestBase
 	public void CreateService()
 	{
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-tests", Guid.NewGuid().ToString("n"));
-		_store = new SqliteProjectStore(_root);
-		_operations = new SqliteOperationLog(_root);
+		_store = new FileProjectStore(_root);
+		_operations = new FileOperationLog(_root);
 		_artifacts = new FileArtifactStore(_root);
 		_datasets = new FileDatasetStore(_root, new LocalBarStorage(Path.Combine(_root, "market-data")));
 		_specs = new FileSpecStore(_root);

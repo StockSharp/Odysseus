@@ -166,6 +166,25 @@ Then ask it to `import_demo_dataset` and work through a hypothesis. The bundled 
 so nothing measured on it says anything about any market — it is there to prove the machinery runs
 without an account.
 
+### Workspace files
+
+One MCP process owns one workspace, set by `ODYSSEUS_PROJECTS_ROOT`. Stop that process before using
+research commands in the CLI against the same folder. Independent workspaces can run independently.
+Requests within one process are serialized when they update metadata.
+
+Projects, budgets, candidates, runs, measurements and audit events are readable JSON files. Record
+file names include their insertion order; updates keep the same name. Scoped operation keys live in
+`operations.json`, and spent closed history in `closed-history.json`, beside the project folders.
+These journals survive restarts, so restarting the server or creating another project does not reset
+research limits or make a closed stretch available again. No database service or native SQLite library
+is needed.
+
+Specifications, generated source, assemblies and completed strategies remain files inside their
+project. Market history stays in StockSharp's file storage at `ODYSSEUS_MARKET_DATA`; it is not copied
+into project metadata. Each trading runner keeps its own files and can outlive the MCP process.
+
+For a workspace created by an older SQLite version, see the [one-time migration](docs/storage.md).
+
 ### With real data
 
 Real data comes through a **StockSharp connector**, and the server is not compiled against one. It

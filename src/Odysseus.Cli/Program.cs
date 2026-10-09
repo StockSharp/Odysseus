@@ -28,9 +28,7 @@ public static class Program
 
 		Ui.UseColour(Environment.GetEnvironmentVariable("NO_COLOR") is null);
 
-		// Asking what the commands are opens nothing. A workspace makes the projects directory and the
-		// databases under it, and help is the one command that has to answer on a machine where nothing
-		// has been started yet.
+		// Help also works before a workspace has been created.
 		if (IsHelp(args))
 		{
 			Usage();
@@ -935,9 +933,9 @@ public static class Program
 		Ui.Aside("  " + ended.Detail);
 		Ui.Blank();
 
-		// The row in the project database is written by whichever process owns the project, and this
+		// The deployment record is written by whichever process owns the workspace, and this
 		// command does not open it. What was stopped is the process; what a session reads afterwards is
-		// the row, and stop_deployment is what brings the two together.
+		// the record, and stop_deployment is what brings the two together.
 		Ui.Aside("  The deployment's own record is updated by the server or by stop_deployment, not here.");
 		Ui.Blank();
 

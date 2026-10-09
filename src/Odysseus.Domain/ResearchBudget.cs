@@ -22,8 +22,8 @@ public sealed record ResearchBudgetState(
 /// </summary>
 /// <remarks>
 /// The loop is driven by the user's agent, which has no reason to stop on its own, so the ceiling is
-/// held by the server rather than asked of the caller. It is held where the figures are kept: a claim is
-/// one statement in the store, which compares and adds in the same breath, so callers arriving together
+/// held by the server rather than asked of the caller. It is held where the figures are kept: the store
+/// serializes each comparison and update, so callers arriving together
 /// cannot each find room for the last backtest. Allowance is taken before the expensive work starts -
 /// counting afterwards would let a crash between the work and the count hand the budget back for free -
 /// and given back only when the work it paid for never happened.

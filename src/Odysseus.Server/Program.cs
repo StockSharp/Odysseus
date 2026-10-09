@@ -35,14 +35,14 @@ public static class Program
 		builder.Services.AddSingleton(options);
 		builder.Services.AddSingleton<ToolGuard>();
 		builder.Services.AddSingleton<IClock, SystemClock>();
-		builder.Services.AddSingleton(_ => new SqliteProjectStore(options.ProjectsRoot));
-		builder.Services.AddSingleton<IProjectStore>(services => services.GetRequiredService<SqliteProjectStore>());
-		builder.Services.AddSingleton<IAuditLog>(services => services.GetRequiredService<SqliteProjectStore>());
-		builder.Services.AddSingleton<IOperationLog>(_ => new SqliteOperationLog(options.ProjectsRoot));
+		builder.Services.AddSingleton(_ => new FileProjectStore(options.ProjectsRoot));
+		builder.Services.AddSingleton<IProjectStore>(services => services.GetRequiredService<FileProjectStore>());
+		builder.Services.AddSingleton<IAuditLog>(services => services.GetRequiredService<FileProjectStore>());
+		builder.Services.AddSingleton<IOperationLog>(_ => new FileOperationLog(options.ProjectsRoot));
 
 		// Beside the projects rather than inside one: a project cannot be the keeper of a rule whose only
 		// way round is to start another project.
-		builder.Services.AddSingleton<IClosedHistoryLedger>(_ => new SqliteClosedHistoryLedger(options.ProjectsRoot));
+		builder.Services.AddSingleton<IClosedHistoryLedger>(_ => new FileClosedHistoryLedger(options.ProjectsRoot));
 		builder.Services.AddSingleton<IArtifactStore>(_ => new FileArtifactStore(options.ProjectsRoot));
 		builder.Services.AddSingleton<IBarStorage>(_ => new LocalBarStorage(options.MarketData));
 		builder.Services.AddSingleton<IDatasetStore>(services => new FileDatasetStore(
@@ -50,9 +50,9 @@ public static class Program
 			services.GetRequiredService<IBarStorage>()));
 		builder.Services.AddSingleton<ISpecStore>(_ => new FileSpecStore(options.ProjectsRoot));
 		builder.Services.AddSingleton<ICompletedStore>(_ => new FileCompletedStore(options.ProjectsRoot));
-		builder.Services.AddSingleton<ICandidateStore>(services => services.GetRequiredService<SqliteProjectStore>());
-		builder.Services.AddSingleton<IRunStore>(services => services.GetRequiredService<SqliteProjectStore>());
-		builder.Services.AddSingleton<IEvaluationStore>(services => services.GetRequiredService<SqliteProjectStore>());
+		builder.Services.AddSingleton<ICandidateStore>(services => services.GetRequiredService<FileProjectStore>());
+		builder.Services.AddSingleton<IRunStore>(services => services.GetRequiredService<FileProjectStore>());
+		builder.Services.AddSingleton<IEvaluationStore>(services => services.GetRequiredService<FileProjectStore>());
 
 		// A candidate is compiled code with no ceiling on what it will ask for, so it runs in a process of
 		// its own. The server holds a client of that process and never an assembly it cannot unload.
@@ -145,7 +145,7 @@ public static class Program
 			services.GetRequiredService<IOperationLog>(),
 			services.GetRequiredService<IClock>()));
 
-		builder.Services.AddSingleton<IDeploymentStore>(services => services.GetRequiredService<SqliteProjectStore>());
+		builder.Services.AddSingleton<IDeploymentStore>(services => services.GetRequiredService<FileProjectStore>());
 
 		builder.Services.AddSingleton(services => new DeploymentService(
 			services.GetRequiredService<IProjectStore>(),

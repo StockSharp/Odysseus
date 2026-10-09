@@ -88,7 +88,7 @@ public sealed class RunnerRegistry
 	/// <returns>The records, oldest first.</returns>
 	/// <remarks>
 	/// A home with no record is a runner that exited in an orderly fashion, and it is not listed: what
-	/// survives it is the row in the project database and the journal in its home, both of which are read
+	/// survives it is the project's deployment record and the journal in its home, both of which are read
 	/// by name. Listing it here would report a stopped deployment as something still to be dealt with.
 	/// </remarks>
 	public IReadOnlyList<RunnerRecord> Records()
@@ -134,10 +134,8 @@ public sealed class RunnerRegistry
 	/// <returns>The runner's home, made and empty.</returns>
 	/// <exception cref="RunnerAlreadyRunningException">A live runner already has this project.</exception>
 	/// <remarks>
-	/// The one-running-deployment rule, arbitrated where two processes can both see it. A row in the
-	/// project database cannot do it: two servers over one root read the table, both find nothing
-	/// running, and both write a row - and the first anybody hears of the collision is two strategies
-	/// trading against each other's positions on one account.
+	/// The one-running-deployment rule must account for a runner that outlives its MCP or CLI session.
+	/// The next session checks the process identity recorded in the claim before starting another runner.
 	///
 	/// A claim is a file, put on the project's name while holding the lock every taker and every remover
 	/// of a claim holds, so exactly one of two racing callers gets it. A claim left behind by a runner

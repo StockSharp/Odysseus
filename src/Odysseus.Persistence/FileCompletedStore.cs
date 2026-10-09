@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 /// Laid out as <c>{root}/{project}/completed/{class name}-{candidate}/</c>, holding the generated C#,
 /// the specification it was translated from and one JSON file with everything else. Plain files under
 /// plain names, because the point of finishing something is being able to open it without this server:
-/// a folder can be zipped, mailed and read in an editor, and a row in a database cannot.
+/// a folder can be zipped, mailed and read in an editor.
 ///
 /// Nothing here is ever rewritten. A conclusion drawn twice is a conclusion changed, and the service
 /// above refuses that before it reaches the disk.

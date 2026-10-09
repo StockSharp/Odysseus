@@ -20,7 +20,7 @@ public sealed record ArtifactDescriptor(ArtifactId Id, string Sha256, long Lengt
 ///
 /// Every operation names the project. Content-addressed storage tempts one to keep a single pool and
 /// let identical bytes be shared, and the cost of that is a project that is no longer a thing you can
-/// carry: its database would reference files that live somewhere else entirely, and a copied folder
+/// carry: its records would reference files that live somewhere else entirely, and a copied folder
 /// would open with every source and assembly missing.
 /// </remarks>
 public interface IArtifactStore

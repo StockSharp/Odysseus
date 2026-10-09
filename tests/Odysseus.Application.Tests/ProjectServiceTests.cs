@@ -11,8 +11,8 @@ using StockSharp.Odysseus.Persistence;
 public class ProjectServiceTests : OdysseusTestBase
 {
 	private string _root;
-	private SqliteProjectStore _store;
-	private SqliteOperationLog _operations;
+	private FileProjectStore _store;
+	private FileOperationLog _operations;
 	private FixedClock _clock;
 	private ProjectService _service;
 
@@ -24,8 +24,8 @@ public class ProjectServiceTests : OdysseusTestBase
 	public void CreateService()
 	{
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-tests", Guid.NewGuid().ToString("n"));
-		_store = new SqliteProjectStore(_root);
-		_operations = new SqliteOperationLog(_root);
+		_store = new FileProjectStore(_root);
+		_operations = new FileOperationLog(_root);
 		_clock = new FixedClock(new DateTime(2026, 8, 26, 12, 0, 0, DateTimeKind.Utc));
 		_service = new ProjectService(_store, _store, _operations, _clock, ServerModes.Local, Budget);
 	}
@@ -99,8 +99,8 @@ public class ProjectServiceTests : OdysseusTestBase
 
 		_store.Dispose();
 		_operations.Dispose();
-		_store = new SqliteProjectStore(_root);
-		_operations = new SqliteOperationLog(_root);
+		_store = new FileProjectStore(_root);
+		_operations = new FileOperationLog(_root);
 		_service = new ProjectService(_store, _store, _operations, _clock, ServerModes.Local, Budget);
 
 		var again = await _service.CreateProjectAsync("durable", "op-1", Actors.Agent, CancellationToken);

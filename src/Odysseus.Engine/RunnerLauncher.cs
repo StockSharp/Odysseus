@@ -142,9 +142,8 @@ public sealed class RunnerLauncher : IRunnerHost
 		if (!string.IsNullOrWhiteSpace(mandatePath))
 			info.Environment[LiveMandateFile.PathVariable] = mandatePath;
 
-		// A runner has no business in the project database: one connection behind a semaphore, no
-		// write-ahead log and no busy timeout is not a file two processes write. Everything it needs is
-		// in its home.
+		// Project metadata belongs to the workspace's MCP or CLI process. A runner reads and writes only
+		// its own home, which carries everything it needs.
 		info.Environment.Remove("ODYSSEUS_PROJECTS_ROOT");
 
 		return info;

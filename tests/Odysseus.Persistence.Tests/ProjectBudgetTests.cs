@@ -13,21 +13,20 @@ using System.Threading;
 ///
 /// So the interesting case is not a claim inside the allowance but a crowd of them at its edge. Claims
 /// that fit prove the addition is atomic; only claims competing for the last of the allowance prove the
-/// limit itself holds, and those are the ones a store with the comparison in C# rather than in the
-/// statement gets wrong.
+/// limit itself holds. The comparison and write must happen under the same gate.
 /// </remarks>
 [TestClass]
 public class ProjectBudgetTests : OdysseusTestBase
 {
 	private string _root;
-	private SqliteProjectStore _store;
+	private FileProjectStore _store;
 
 	/// <summary>Builds a store over temporary storage.</summary>
 	[TestInitialize]
 	public void CreateStore()
 	{
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-tests", Guid.NewGuid().ToString("n"));
-		_store = new SqliteProjectStore(_root);
+		_store = new FileProjectStore(_root);
 	}
 
 	/// <summary>Releases storage.</summary>
@@ -79,8 +78,7 @@ public class ProjectBudgetTests : OdysseusTestBase
 	/// <remarks>
 	/// This is the case the ceiling exists for. Twenty claims out of a hundred say the addition is atomic
 	/// and nothing about the limit; thirty-two callers competing for four backtests say whether the limit
-	/// is a limit. Take the comparison out of the statement and decide it in C# - read the figure, find
-	/// room in it, write the sum back - and each of these reads the same figure, each finds the same room,
+	/// is a limit. Read and update without serialization, and each of these can read the same figure, find the same room,
 	/// and the project runs eight times the research it was allowed to.
 	/// </remarks>
 	[TestMethod]
@@ -257,7 +255,7 @@ public class ProjectBudgetTests : OdysseusTestBase
 
 	/// <summary>
 	/// Once the machine time is gone the crowd is turned away whole: the time gate is part of the same
-	/// statement as the ceiling, so a claim cannot slip past it by arriving with others.
+	/// guarded operation as the ceiling, so a claim cannot slip past it by arriving with others.
 	/// </summary>
 	[TestMethod]
 	public async Task ClaimsRacingOnceTheTimeIsSpentAreAllRefused()
@@ -294,7 +292,7 @@ public class ProjectBudgetTests : OdysseusTestBase
 
 	// Every caller waits on the same signal before it starts, so they are inside the claim together
 	// rather than one after another. Claims issued in a loop mostly complete before the next one is
-	// created - the work is a single statement against an open connection - and a test built that way
+	// created, and a test built that way
 	// would say nothing about the case it was written for.
 	private async Task<int> RaceAsync(int callers, Func<Task<bool>> attempt)
 	{

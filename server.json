@@ -7,18 +7,18 @@
     "url": "https://github.com/StockSharp/Odysseus",
     "source": "github"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "packages": [
     {
       "registryType": "nuget",
       "identifier": "StockSharp.Odysseus.Mcp",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "runtimeHint": "dnx",
       "transport": { "type": "stdio" },
       "environmentVariables": [
         {
           "name": "ODYSSEUS_PROJECTS_ROOT",
-          "description": "Directory for projects, local databases and research artifacts.",
+          "description": "Workspace directory for project JSON files and research artifacts. Use one MCP process per workspace.",
           "isRequired": true
         },
         {

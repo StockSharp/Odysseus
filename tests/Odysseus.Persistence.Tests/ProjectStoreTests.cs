@@ -10,7 +10,7 @@ using StockSharp.Odysseus.Application;
 public class ProjectStoreTests : OdysseusTestBase
 {
 	private string _root;
-	private SqliteProjectStore _store;
+	private FileProjectStore _store;
 
 	private static DateTime Now => DateTime.UtcNow;
 
@@ -22,7 +22,7 @@ public class ProjectStoreTests : OdysseusTestBase
 	public void CreateStore()
 	{
 		_root = Path.Combine(Path.GetTempPath(), "odysseus-tests", Guid.NewGuid().ToString("n"));
-		_store = new SqliteProjectStore(_root);
+		_store = new FileProjectStore(_root);
 	}
 
 	/// <summary>Removes the temporary root.</summary>
@@ -62,7 +62,7 @@ public class ProjectStoreTests : OdysseusTestBase
 		await _store.CreateAsync(project, CancellationToken);
 
 		_store.Dispose();
-		_store = new SqliteProjectStore(_root);
+		_store = new FileProjectStore(_root);
 
 		var opened = await _store.OpenAsync(project.Id, CancellationToken);
 
@@ -100,7 +100,7 @@ public class ProjectStoreTests : OdysseusTestBase
 		await _store.CreateAsync(project, CancellationToken);
 
 		_store.Dispose();
-		_store = new SqliteProjectStore(_root);
+		_store = new FileProjectStore(_root);
 
 		var restored = ResearchBudget.Restore((await _store.OpenAsync(project.Id, CancellationToken)).Budget);
 
@@ -224,7 +224,7 @@ public class ProjectStoreTests : OdysseusTestBase
 		await _store.AppendAsync(project.Id, AuditEventTypes.DatasetImported, Actors.System, "frozen", "abc", CancellationToken);
 
 		_store.Dispose();
-		_store = new SqliteProjectStore(_root);
+		_store = new FileProjectStore(_root);
 
 		var trail = await _store.ReadAsync(project.Id, CancellationToken);
 
@@ -255,13 +255,4 @@ public class ProjectStoreTests : OdysseusTestBase
 		AreEqual(32L, positions.Max());
 	}
 
-	/// <summary>The database records the schema it was written with, so a future version can tell.</summary>
-	[TestMethod]
-	public async Task SchemaVersionIsRecorded()
-	{
-		var project = ResearchProject.Create("versioned", Budget, Now);
-		await _store.CreateAsync(project, CancellationToken);
-
-		AreEqual(SqliteProjectStore.SchemaVersion, await _store.GetSchemaVersionAsync(project.Id, CancellationToken));
-	}
 }

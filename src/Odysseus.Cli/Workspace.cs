@@ -33,9 +33,9 @@ public sealed class Workspace : IDisposable
 	private const string DefaultAllow = "StockSharp.";
 
 	private readonly string _root;
-	private readonly SqliteProjectStore _store;
-	private readonly SqliteOperationLog _operations;
-	private readonly SqliteClosedHistoryLedger _ledger;
+	private readonly FileProjectStore _store;
+	private readonly FileOperationLog _operations;
+	private readonly FileClosedHistoryLedger _ledger;
 	private readonly WorkerHost _worker;
 	private readonly RunnerRegistry _runners;
 
@@ -43,9 +43,9 @@ public sealed class Workspace : IDisposable
 	{
 		_root = root;
 		MarketData = marketData;
-		_store = new SqliteProjectStore(root);
-		_operations = new SqliteOperationLog(root);
-		_ledger = new SqliteClosedHistoryLedger(root);
+		_store = new FileProjectStore(root);
+		_operations = new FileOperationLog(root);
+		_ledger = new FileClosedHistoryLedger(root);
 
 		var artifacts = new FileArtifactStore(root);
 		var datasets = new FileDatasetStore(root, new LocalBarStorage(marketData));

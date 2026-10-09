@@ -26,10 +26,8 @@ using StockSharp.Odysseus.Domain;
 /// <param name="Token">What a client must present before the runner will answer it.</param>
 /// <param name="Heartbeat">How often the runner writes what it is holding into its journal.</param>
 /// <remarks>
-/// Everything the runner needs is here, because the runner never opens the project database: that store
-/// keeps one connection behind a semaphore with no write-ahead log and no busy timeout, and its own
-/// documentation says two writers on one file is a locking problem invented for the sake of a smaller
-/// class. The server stays the only writer, and the runner's authority lives in its own directory.
+/// Everything the runner needs is here. The MCP or CLI process owns project metadata, while the
+/// runner's authority and journal live in its own directory and can outlive that process.
 ///
 /// Credentials are deliberately absent. They arrive as a path in the child's environment, as the
 /// credential file's own documentation insists, which is the exact inverse of the worker: a worker has
