@@ -56,6 +56,9 @@ under **Runs from source**. Upload `distribution/glama/Dockerfile` directly to t
 configuration when Glama requests it. The image installs published NuGet version 1.0.0, including its worker
 and runner, with projects and market-data folders inside `/data`.
 
+The root `glama.json` declares the GitHub maintainer. After that file is available on GitHub, sign in
+to Glama with the matching GitHub account and claim the listing to manage its build configuration.
+
 The published 1.0.0 tool reports `Odysseus.Server` as its handshake name. Version 1.0.1 carries the
 explicit name and title listed at the top of this document.
 
