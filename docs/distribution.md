@@ -51,10 +51,13 @@ used in desktop MCP clients; it does not turn Odysseus into a hosted service.
 
 ## Glama and Awesome MCP Servers
 
-After NuGet version 1.0.1 is available, submit the repository to [Glama](https://glama.ai/mcp/servers)
+Submit the repository to [Glama](https://glama.ai/mcp/servers)
 under **Runs from source**. Upload `distribution/glama/Dockerfile` directly to the listing's build
-configuration when Glama requests it. The image starts the published NuGet tool, including its worker
+configuration when Glama requests it. The image installs published NuGet version 1.0.0, including its worker
 and runner, with projects and market-data folders inside `/data`.
+
+The published 1.0.0 tool reports `Odysseus.Server` as its handshake name. Version 1.0.1 carries the
+explicit name and title listed at the top of this document.
 
 Glama must build the image and pass its startup checks. Copy the score badge from the resulting
 listing into the Awesome MCP Servers entry; that catalogue requires a verified Glama listing.
